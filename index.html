@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Portfolio Command Center | Kairos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .dashboard-container { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .project-card { transition: all 0.3s ease; }
+        .project-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress-bar { transition: width 0.8s ease-in-out; }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="bg-white shadow-sm p-6 mb-6">
+            <div class="flex justify-between items-center max-w-7xl mx-auto">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Strategic Portfolio Command Center</h1>
+                    <p class="text-gray-600 mt-1">Real-time execution dashboard • Kairos Agency</p>
+                </div>
+                <div class="text-right">
+                    <div id="current-time" class="text-2xl font-mono text-gray-900"></div>
+                    <div id="current-date" class="text-sm text-gray-600"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Strategic Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Portfolio Momentum</p>
+                            <p id="momentum-value" class="text-3xl font-bold text-gray-900">78%</p>
+                        </div>
+                        <i data-lucide="zap" class="w-8 h-8 text-blue-600"></i>
+                    </div>
+                    <div class="mt-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div id="momentum-bar" class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 78%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Opportunities</p>
+                            <p class="text-3xl font-bold text-green-600">3</p>
+                        </div>
+                        <i data-lucide="target" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">High-value prospects</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Critical Blockers</p>
+                            <p class="text-3xl font-bold text-red-600">1</p>
+                        </div>
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-600"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">Require immediate attention</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Week Target</p>
+                            <p class="text-sm font-bold text-gray-900">Sept Setup</p>
+                        </div>
+                        <i data-lucide="calendar" class="w-8 h-8 text-purple-600"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">On track for timeline</p>
+                </div>
+            </div>
+
+            <!-- Today's Focus -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-sm p-6 mb-6 text-white">
+                <div class="flex items-center mb-2">
+                    <i data-lucide="lightbulb" class="w-6 h-6 mr-2"></i>
+                    <h2 class="text-xl font-bold">Today's Strategic Focus</h2>
+                </div>
+                <p class="text-lg opacity-90" id="todays-focus">The Beginning meeting prep & Kairos domain acquisition</p>
+                <p class="text-sm opacity-75 mt-2">Week Target: September positioning setup complete</p>
+            </div>
+
+            <!-- Project Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Kairos Design Agency -->
+                <div class="project-card bg-white rounded-lg shadow-sm border-l-4 border-red-500 bg-red-50 p-6 cursor-pointer" onclick="toggleProject('kairos')">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-green-500 pulse-dot mr-3"></div>
+                            <h3 class="text-lg font-bold text-gray-900">Kairos Design Agency</h3>
+                            <i data-lucide="trending-up" class="w-4 h-4 text-green-600 ml-2"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Priority: HIGH</div>
+                            <div class="text-xs text-gray-500">Sept 3 meeting</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span id="kairos-progress">35%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 35%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Current Revenue</p>
+                            <p class="font-medium text-gray-900">$0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Potential</p>
+                            <p class="font-medium text-green-600">$15K+</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+                        <p class="text-sm font-medium text-yellow-800">Next Action:</p>
+                        <p class="text-sm text-yellow-700">Secure domain & The Beginning prep</p>
+                    </div>
+
+                    <div id="kairos-tasks" class="hidden border-t pt-4 space-y-2">
+                        <h4 class="font-medium text-gray-900 mb-2">Active Tasks:</h4>
+                        <div class="flex items-center">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600 mr-2"></i>
+                            <span class="text-sm text-gray-500 line-through">Register Kairos LLC</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                            <span class="text-sm text-gray-900">Research & secure domain</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                            <span class="text-sm text-gray-900">Prepare The Beginning presentation</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                            <span class="text-sm text-gray-900">Develop service framework</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EY Studio+ -->
+                <div class="project-card bg-white rounded-lg shadow-sm border-l-4 border-red-500 bg-red-50 p-6 cursor-pointer" onclick="toggleProject('ey')">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
+                            <h3 class="text-lg font-bold text-gray-900">EY Studio+ Positioning</h3>
+                            <i data-lucide="target" class="w-4 h-4 text-blue-600 ml-2"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Priority: HIGH</div>
+                            <div class="text-xs text-gray-500">Sept return</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>60%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 60%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Current Revenue</p>
+                            <p class="font-medium text-gray-900">Salary secured</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Potential</p>
+                            <p class="font-medium text-green-600">Promotion track</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="text-sm font-medium text-yellow-800">Next Action:</p>
+                        <p class="text-sm text-yellow-700">Ecosystem partnership mapping</p>
+                    </div>
+                </div>
+
+                <!-- The Beginning Partnership -->
+                <div class="project-card bg-white rounded-lg shadow-sm border-l-4 border-red-500 bg-red-50 p-6 cursor-pointer" onclick="toggleProject('beginning')">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-yellow-500 mr-3"></div>
+                            <h3 class="text-lg font-bold text-gray-900">The Beginning Partnership</h3>
+                            <i data-lucide="clock" class="w-4 h-4 text-yellow-600 ml-2"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Priority: HIGH</div>
+                            <div class="text-xs text-gray-500">Early Sept</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>20%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 20%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Current Revenue</p>
+                            <p class="font-medium text-gray-900">$0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Potential</p>
+                            <p class="font-medium text-green-600">$25K+</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="text-sm font-medium text-yellow-800">Next Action:</p>
+                        <p class="text-sm text-yellow-700">Meeting preparation & research</p>
+                    </div>
+                </div>
+
+                <!-- Bobo Wine Revival -->
+                <div class="project-card bg-white rounded-lg shadow-sm border-l-4 border-yellow-500 bg-yellow-50 p-6 cursor-pointer" onclick="toggleProject('bobo')">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-orange-500 mr-3"></div>
+                            <h3 class="text-lg font-bold text-gray-900">Bobo Wine Revival</h3>
+                            <i data-lucide="brain" class="w-4 h-4 text-purple-600 ml-2"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Priority: MEDIUM</div>
+                            <div class="text-xs text-gray-500">Dec relaunch</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>15%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 15%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Current Revenue</p>
+                            <p class="font-medium text-gray-900">$0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Potential</p>
+                            <p class="font-medium text-green-600">TBD</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="text-sm font-medium text-yellow-800">Next Action:</p>
+                        <p class="text-sm text-yellow-700">Customer experience workshop design</p>
+                    </div>
+                </div>
+
+                <!-- Brooklyn Heights Association -->
+                <div class="project-card bg-white rounded-lg shadow-sm border-l-4 border-green-500 bg-green-50 p-6 cursor-pointer" onclick="toggleProject('bha')">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-purple-500 mr-3"></div>
+                            <h3 class="text-lg font-bold text-gray-900">Brooklyn Heights Association</h3>
+                            <i data-lucide="target" class="w-4 h-4 text-blue-600 ml-2"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Priority: LOW</div>
+                            <div class="text-xs text-gray-500">Ongoing</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>40%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 40%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Current Revenue</p>
+                            <p class="font-medium text-gray-900">Network value</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Potential</p>
+                            <p class="font-medium text-green-600">Community influence</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="text-sm font-medium text-yellow-800">Next Action:</p>
+                        <p class="text-sm text-yellow-700">Community engagement planning</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Actions -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Today's Required Actions</h2>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-red-50 border border-red-200 rounded">
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mr-3"></i>
+                        <span class="text-red-800 font-medium">URGENT: Secure Kairos domain before competitors</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-blue-50 border border-blue-200 rounded">
+                        <i data-lucide="target" class="w-5 h-5 text-blue-600 mr-3"></i>
+                        <span class="text-blue-800">Research The Beginning family club market trends</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded">
+                        <i data-lucide="clock" class="w-5 h-5 text-green-600 mr-3"></i>
+                        <span class="text-green-800">Draft EY ecosystem partnership targets</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Edit Panel (Hidden by default) -->
+            <div id="edit-panel" class="hidden bg-white rounded-lg shadow-lg p-6 mb-6 border-2 border-blue-500">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Update</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Update Focus</label>
+                        <input type="text" id="focus-input" class="w-full p-2 border border-gray-300 rounded" placeholder="Today's strategic focus">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Portfolio Momentum %</label>
+                        <input type="number" id="momentum-input" class="w-full p-2 border border-gray-300 rounded" min="0" max="100" value="78">
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button onclick="updateDashboard()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update</button>
+                    <button onclick="toggleEditPanel()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Edit Button -->
+            <div class="fixed bottom-6 right-6">
+                <button onclick="toggleEditPanel()" class="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all">
+                    <i data-lucide="edit-3" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Toggle project details
+        function toggleProject(projectId) {
+            const tasks = document.getElementById(projectId + '-tasks');
+            if (tasks) {
+                tasks.classList.toggle('hidden');
+            }
+        }
+
+        // Toggle edit panel
+        function toggleEditPanel() {
+            const panel = document.getElementById('edit-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const focus = document.getElementById('focus-input').value;
+            const momentum = document.getElementById('momentum-input').value;
+            
+            if (focus) {
+                document.getElementById('todays-focus').textContent = focus;
+            }
+            
+            if (momentum) {
+                document.getElementById('momentum-value').textContent = momentum + '%';
+                document.getElementById('momentum-bar').style.width = momentum + '%';
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('dashboard-focus', focus);
+            localStorage.setItem('dashboard-momentum', momentum);
+            localStorage.setItem('dashboard-updated', new Date().toISOString());
+            
+            toggleEditPanel();
+        }
+
+        // Load saved data
+        function loadSavedData() {
+            const savedFocus = localStorage.getItem('dashboard-focus');
+            const savedMomentum = localStorage.getItem('dashboard-momentum');
+            
+            if (savedFocus) {
+                document.getElementById('todays-focus').textContent = savedFocus;
+                document.getElementById('focus-input').value = savedFocus;
+            }
+            
+            if (savedMomentum) {
+                document.getElementById('momentum-value').textContent = savedMomentum + '%';
+                document.getElementById('momentum-bar').style.width = savedMomentum + '%';
+                document.getElementById('momentum-input').value = savedMomentum;
+            }
+        }
+
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+        loadSavedData();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                toggleEditPanel();
+            }
+        });
+    </script>
+</body>
+</html>      
