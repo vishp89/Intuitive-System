@@ -1,0 +1,354 @@
+# .github/workflows/portfolio-email-automation.yml
+# This GitHub Action emails you daily portfolio reminders and weekly reports
+
+name: Portfolio Email Automation
+
+on:
+  schedule:
+    # Daily at 7:30 AM Eastern Time (11:30 UTC)
+    - cron: '30 11 * * *'
+    # Weekly sprint planning on Mondays at 9:00 AM ET (13:00 UTC)  
+    - cron: '0 13 * * 1'
+    # Weekly review on Fridays at 4:00 PM ET (20:00 UTC)
+    - cron: '0 20 * * 5'
+  
+  # Allow manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  daily-email-reminder:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '30 11 * * *' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Send Daily Portfolio Email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        # SMTP server configuration
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        
+        # Email details
+        subject: "📊 Daily Portfolio Review - ${{ github.event.repository.updated_at }}"
+        to: ${{ secrets.YOUR_EMAIL }}
+        from: Portfolio Manager <${{ secrets.EMAIL_USERNAME }}>
+        
+        # Email content
+        html_body: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+                  .content { padding: 20px; }
+                  .project { background: #f8f9fa; border-left: 4px solid #007bff; margin: 10px 0; padding: 15px; }
+                  .checklist { background: #e8f5e8; padding: 15px; border-radius: 5px; }
+                  .urgent { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; }
+                  ul { padding-left: 20px; }
+                  .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>🎯 Daily Portfolio Command Center</h1>
+                  <p>Morning Strategic Setup - ${{ github.event.repository.updated_at }}</p>
+              </div>
+              
+              <div class="content">
+                  <div class="urgent">
+                      <h3>⚡ Immediate Actions Required</h3>
+                      <ul>
+                          <li><strong>URGENT:</strong> Update dashboard with yesterday's actual progress %</li>
+                          <li><strong>FOCUS:</strong> Identify today's 3 critical actions (not tasks - ACTIONS)</li>
+                          <li><strong>PREPARE:</strong> Time-block calendar for focused work</li>
+                      </ul>
+                  </div>
+
+                  <div class="checklist">
+                      <h3>📋 Morning Setup Protocol (7:30-9:00 AM)</h3>
+                      <ul>
+                          <li>☐ Open Portfolio Dashboard: <a href="https://yourusername.github.io/portfolio-dashboard" class="button">Access Dashboard</a></li>
+                          <li>☐ Review overnight insights from Strategic Journal</li>
+                          <li>☐ Check Innovation Intelligence for relevant insights</li>
+                          <li>☐ Strategic Context Loading completed</li>
+                          <li>☐ Portfolio Triage completed</li>
+                          <li>☐ Execution Prep completed</li>
+                      </ul>
+                  </div>
+
+                  <h3>🎯 Project Focus Areas</h3>
+                  
+                  <div class="project">
+                      <h4>🚀 Kairos Design Agency (HIGH PRIORITY)</h4>
+                      <p><strong>Today's Focus:</strong> The Beginning meeting prep & domain security</p>
+                      <p><strong>Critical Action:</strong> Secure domain before competitors</p>
+                      <p><strong>Success Metric:</strong> Meeting materials ready + domain registered</p>
+                  </div>
+
+                  <div class="project">
+                      <h4>💼 EY Studio+ Positioning (HIGH PRIORITY)</h4>
+                      <p><strong>Today's Focus:</strong> Ecosystem partnership mapping</p>
+                      <p><strong>Critical Action:</strong> Identify 3 partnership targets</p>
+                      <p><strong>Success Metric:</strong> Outreach strategy defined</p>
+                  </div>
+
+                  <div class="project">
+                      <h4>🏗️ The Beginning Partnership (HIGH PRIORITY)</h4>
+                      <p><strong>Today's Focus:</strong> Family club market research</p>
+                      <p><strong>Critical Action:</strong> Competitor analysis completed</p>
+                      <p><strong>Success Metric:</strong> Value proposition framework ready</p>
+                  </div>
+
+                  <div class="project">
+                      <h4>🍷 Bobo Wine Revival (MEDIUM PRIORITY)</h4>
+                      <p><strong>Today's Focus:</strong> Customer experience workshop design</p>
+                      <p><strong>Critical Action:</strong> Workshop framework outline</p>
+                      <p><strong>Success Metric:</strong> First draft completed</p>
+                  </div>
+
+                  <div class="project">
+                      <h4>🏘️ Brooklyn Heights Association (LOW PRIORITY)</h4>
+                      <p><strong>Today's Focus:</strong> Community engagement planning</p>
+                      <p><strong>Critical Action:</strong> Connect BHA to The Beginning opportunity</p>
+                      <p><strong>Success Metric:</strong> Introduction strategy defined</p>
+                  </div>
+
+                  <div class="checklist">
+                      <h3>🌅 End-of-Day Review Protocol (8:30-9:00 PM)</h3>
+                      <p><strong>Remember to complete:</strong></p>
+                      <ul>
+                          <li>☐ What got completed vs. planned?</li>
+                          <li>☐ What obstacles emerged?</li>
+                          <li>☐ What opportunities were missed?</li>
+                          <li>☐ Tomorrow's priority sequence</li>
+                          <li>☐ Update dashboard with real progress %</li>
+                      </ul>
+                  </div>
+
+                  <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                      <h4>🤖 Watson Accountability Check</h4>
+                      <p>Reply to this email tonight with your completion summary. No excuses, just results.</p>
+                      <p><strong>Success today = 3 measurable actions completed + dashboard updated with real progress</strong></p>
+                  </div>
+              </div>
+          </body>
+          </html>
+
+  weekly-sprint-email:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 13 * * 1'
+    
+    steps:
+    - name: Send Weekly Sprint Planning Email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        
+        subject: "🎯 Weekly Sprint Planning - Week of ${{ github.event.repository.updated_at }}"
+        to: ${{ secrets.YOUR_EMAIL }}
+        from: Portfolio Manager <${{ secrets.EMAIL_USERNAME }}>
+        
+        html_body: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; text-align: center; }
+                  .content { padding: 20px; }
+                  .sprint-goal { background: #e8f5e8; border-left: 4px solid #28a745; margin: 15px 0; padding: 15px; }
+                  .priority { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                  .button { background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>🚀 Weekly Sprint Planning</h1>
+                  <p>Strategic Architecture for Maximum Momentum</p>
+              </div>
+              
+              <div class="content">
+                  <div class="priority">
+                      <h3>⚡ This Week's Strategic Priorities</h3>
+                      <ol>
+                          <li><strong>Kairos Agency:</strong> Secure domain + execute The Beginning presentation</li>
+                          <li><strong>EY Positioning:</strong> Finalize ecosystem partnership strategy</li>
+                          <li><strong>Portfolio Management:</strong> Achieve 85%+ daily review completion rate</li>
+                      </ol>
+                  </div>
+
+                  <h3>📊 Project Sprint Goals</h3>
+                  
+                  <div class="sprint-goal">
+                      <h4>🚀 Kairos Design Agency</h4>
+                      <p><strong>Weekly Target:</strong> Operational foundation + first client presentation</p>
+                      <p><strong>Key Deliverables:</strong></p>
+                      <ul>
+                          <li>☐ Domain secured and website framework planned</li>
+                          <li>☐ The Beginning presentation completed and delivered</li>
+                          <li>☐ Service offering framework documented</li>
+                      </ul>
+                      <p><strong>Success Metric:</strong> Client contract discussed + next steps defined</p>
+                  </div>
+
+                  <div class="sprint-goal">
+                      <h4>💼 EY Studio+ Positioning</h4>
+                      <p><strong>Weekly Target:</strong> September strategy crystallized</p>
+                      <p><strong>Key Deliverables:</strong></p>
+                      <ul>
+                          <li>☐ 5 ecosystem partnership targets identified</li>
+                          <li>☐ Workshop methodology framework developed</li>
+                          <li>☐ Internal network building plan executed</li>
+                      </ul>
+                      <p><strong>Success Metric:</strong> Return-to-work strategy 90% complete</p>
+                  </div>
+
+                  <div class="sprint-goal">
+                      <h4>🏗️ The Beginning Partnership</h4>
+                      <p><strong>Weekly Target:</strong> Meeting preparation and value proposition</p>
+                      <p><strong>Key Deliverables:</strong></p>
+                      <ul>
+                          <li>☐ Family club market research completed</li>
+                          <li>☐ Competitive analysis and positioning framework</li>
+                          <li>☐ Initial design concepts and presentation materials</li>
+                      </ul>
+                      <p><strong>Success Metric:</strong> Compelling presentation ready for September meeting</p>
+                  </div>
+
+                  <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                      <h4>📅 Week Architecture</h4>
+                      <p><strong>Monday:</strong> Sprint setup + Kairos domain action</p>
+                      <p><strong>Tuesday:</strong> Deep work on The Beginning research</p>
+                      <p><strong>Wednesday:</strong> EY partnership mapping + mid-week review</p>
+                      <p><strong>Thursday:</strong> Presentation development + client prep</p>
+                      <p><strong>Friday:</strong> Sprint review + next week planning</p>
+                  </div>
+
+                  <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                      <h4>🤖 Watson Challenge</h4>
+                      <p>This week I'll track your execution against these specific deliverables. No partial credit for "working on it" - only completed deliverables count.</p>
+                      <p><strong>Accountability measure:</strong> 5/5 key deliverables completed = successful sprint</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+
+  weekly-review-email:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 20 * * 5'
+    
+    steps:
+    - name: Send Weekly Review Email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        
+        subject: "📈 Weekly Performance Review - Time for Brutal Honesty"
+        to: ${{ secrets.YOUR_EMAIL }}
+        from: Portfolio Manager <${{ secrets.EMAIL_USERNAME }}>
+        
+        html_body: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+                  .content { padding: 20px; }
+                  .metric { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin: 10px 0; border-radius: 5px; }
+                  .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
+                  .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 15px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>📊 Weekly Performance Analysis</h1>
+                  <p>Data-Driven Review & Next Week Architecture</p>
+              </div>
+              
+              <div class="content">
+                  <div class="warning">
+                      <h3>🎯 Accountability Checkpoint</h3>
+                      <p><strong>This week's execution rate will determine next week's strategy.</strong></p>
+                      <p>Reply with honest assessment - no inflation, no excuses.</p>
+                  </div>
+
+                  <h3>📊 Performance Metrics to Fill Out</h3>
+                  
+                  <div class="metric">
+                      <h4>Daily Review Completion Rate</h4>
+                      <p><strong>Days Completed:</strong> ___ / 5</p>
+                      <p><strong>Percentage:</strong> ___%</p>
+                      <p><strong>Assessment:</strong> [ ] Excellent (100%) [ ] Good (80%+) [ ] Poor (&lt;80%)</p>
+                  </div>
+
+                  <div class="metric">
+                      <h4>🚀 Kairos Design Agency</h4>
+                      <p><strong>Progress:</strong> Start: __% → End: __%</p>
+                      <p><strong>Key Wins:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Major Blockers:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Quality Rating:</strong> ⭐⭐⭐⭐⭐ (circle stars earned)</p>
+                  </div>
+
+                  <div class="metric">
+                      <h4>💼 EY Studio+ Positioning</h4>
+                      <p><strong>Progress:</strong> Start: __% → End: __%</p>
+                      <p><strong>Key Wins:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Major Blockers:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Quality Rating:</strong> ⭐⭐⭐⭐⭐ (circle stars earned)</p>
+                  </div>
+
+                  <div class="metric">
+                      <h4>🏗️ The Beginning Partnership</h4>
+                      <p><strong>Progress:</strong> Start: __% → End: __%</p>
+                      <p><strong>Key Wins:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Major Blockers:</strong></p>
+                      <ul><li>_______________________</li></ul>
+                      <p><strong>Quality Rating:</strong> ⭐⭐⭐⭐⭐ (circle stars earned)</p>
+                  </div>
+
+                  <h3>🧠 Pattern Recognition</h3>
+                  <div class="metric">
+                      <p><strong>What worked exceptionally well this week?</strong></p>
+                      <p>_______________________</p>
+                      
+                      <p><strong>What pattern of failure emerged?</strong></p>
+                      <p>_______________________</p>
+                      
+                      <p><strong>Cross-project synergy discovered?</strong></p>
+                      <p>_______________________</p>
+                      
+                      <p><strong>Blog-worthy insight:</strong></p>
+                      <p>_______________________</p>
+                  </div>
+
+                  <h3>🎯 Next Week Architecture</h3>
+                  <div class="metric">
+                      <p><strong>Highest Impact Priority:</strong> _______________________</p>
+                      <p><strong>Most Urgent Deadline:</strong> _______________________</p>
+                      <p><strong>Biggest Opportunity:</strong> _______________________</p>
+                      <p><strong>Critical Path Item:</strong> _______________________</p>
+                  </div>
+
+                  <div class="success">
+                      <h4>🤖 Watson Performance Analysis</h4>
+                      <p>Send me your completed review by Sunday night. Next week's automation will be calibrated based on this week's execution data.</p>
+                      <p><strong>High performers get advanced strategies. Poor execution gets basic accountability.</strong></p>
+                  </div>
+              </div>
+          </body>
+          </html>
