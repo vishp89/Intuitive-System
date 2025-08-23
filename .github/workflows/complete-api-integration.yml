@@ -1,0 +1,448 @@
+# .github/workflows/complete-api-integration.yml
+name: Complete API Integration
+
+on:
+  issues:
+    types: [opened]
+  repository_dispatch:
+    types: [dashboard-update, document-upload, task-update]
+
+jobs:
+  process-api-request:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.title, '[DASHBOARD UPDATE]') || contains(github.event.issue.title, '[TASK UPDATE]') || contains(github.event.issue.title, '[DOCUMENT UPLOAD]') || github.event_name == 'repository_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.REPO_TOKEN }}
+    
+    - name: Parse request type and data
+      id: parse
+      run: |
+        if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+          # API dispatch
+          echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+          echo "kairos_progress=${{ github.event.client_payload.kairos_progress }}" >> $GITHUB_OUTPUT
+          echo "ey_progress=${{ github.event.client_payload.ey_progress }}" >> $GITHUB_OUTPUT
+          echo "beginning_progress=${{ github.event.client_payload.beginning_progress }}" >> $GITHUB_OUTPUT
+          echo "bobo_progress=${{ github.event.client_payload.bobo_progress }}" >> $GITHUB_OUTPUT
+          echo "bha_progress=${{ github.event.client_payload.bha_progress }}" >> $GITHUB_OUTPUT
+          echo "portfolio_momentum=${{ github.event.client_payload.portfolio_momentum }}" >> $GITHUB_OUTPUT
+          echo "todays_focus=${{ github.event.client_payload.todays_focus }}" >> $GITHUB_OUTPUT
+          echo "document_path=${{ github.event.client_payload.document_path }}" >> $GITHUB_OUTPUT
+          echo "document_content=${{ github.event.client_payload.document_content }}" >> $GITHUB_OUTPUT
+        else
+          # Issue-based trigger
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          
+          if [[ "$ISSUE_TITLE" == *"[DASHBOARD UPDATE]"* ]]; then
+            echo "action=dashboard-update" >> $GITHUB_OUTPUT
+            
+            # Extract dashboard values
+            KAIROS=$(echo "$ISSUE_BODY" | grep "Kairos:" | sed 's/.*Kairos: *\([0-9]*\).*/\1/')
+            EY=$(echo "$ISSUE_BODY" | grep "EY:" | sed 's/.*EY: *\([0-9]*\).*/\1/')
+            BEGINNING=$(echo "$ISSUE_BODY" | grep "Beginning:" | sed 's/.*Beginning: *\([0-9]*\).*/\1/')
+            BOBO=$(echo "$ISSUE_BODY" | grep "Bobo:" | sed 's/.*Bobo: *\([0-9]*\).*/\1/')
+            BHA=$(echo "$ISSUE_BODY" | grep "BHA:" | sed 's/.*BHA: *\([0-9]*\).*/\1/')
+            MOMENTUM=$(echo "$ISSUE_BODY" | grep "Portfolio:" | sed 's/.*Portfolio: *\([0-9]*\).*/\1/')
+            FOCUS=$(echo "$ISSUE_BODY" | grep "Focus:" | sed 's/.*Focus: *\(.*\)/\1/')
+            
+            echo "kairos_progress=${KAIROS:-25}" >> $GITHUB_OUTPUT
+            echo "ey_progress=${EY:-15}" >> $GITHUB_OUTPUT
+            echo "beginning_progress=${BEGINNING:-5}" >> $GITHUB_OUTPUT
+            echo "bobo_progress=${BOBO:-10}" >> $GITHUB_OUTPUT
+            echo "bha_progress=${BHA:-30}" >> $GITHUB_OUTPUT
+            echo "portfolio_momentum=${MOMENTUM:-20}" >> $GITHUB_OUTPUT
+            echo "todays_focus=${FOCUS:-Strategic execution}" >> $GITHUB_OUTPUT
+            
+          elif [[ "$ISSUE_TITLE" == *"[TASK UPDATE]"* ]]; then
+            echo "action=task-update" >> $GITHUB_OUTPUT
+            
+          elif [[ "$ISSUE_TITLE" == *"[DOCUMENT UPLOAD]"* ]]; then
+            echo "action=document-upload" >> $GITHUB_OUTPUT
+            DOC_PATH=$(echo "$ISSUE_BODY" | grep "Path:" | sed 's/.*Path: *\(.*\)/\1/')
+            echo "document_path=${DOC_PATH}" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
+    - name: Create documentation structure
+      if: steps.parse.outputs.action == 'dashboard-update' || steps.parse.outputs.action == 'task-update'
+      run: |
+        # Create docs structure if it doesn't exist
+        mkdir -p docs/portfolio
+        mkdir -p docs/projects/kairos-agency
+        mkdir -p docs/projects/ey-positioning
+        mkdir -p docs/projects/the-beginning
+        mkdir -p docs/projects/bobo-wine
+        mkdir -p docs/projects/bha-engagement
+        mkdir -p docs/resources/innovation-intelligence
+        mkdir -p docs/resources/design-tools
+        mkdir -p docs/resources/templates
+        mkdir -p docs/blog-drafts
+        mkdir -p docs/tasks
+        
+        echo "Created documentation structure"
+    
+    - name: Create/update task documentation
+      if: steps.parse.outputs.action == 'dashboard-update' || steps.parse.outputs.action == 'task-update'
+      run: |
+        cat > docs/portfolio-tasks.md << 'EOF'
+        # Portfolio Task Management & Ideas Repository
+        
+        ## Immediate Action Items (Backlog)
+        
+        ### 📁 Document Repository Setup
+        **Priority:** High  
+        **Description:** Upload and organize contextual documents for portfolio projects  
+        **Progress:** 15%
+        
+        **Components:**
+        - [ ] Bobo Wine patent concept documentation
+        - [ ] Masters program overview and requirements  
+        - [ ] Design frameworks and methodologies reference
+        - [ ] Portfolio strategy documentation
+        - [ ] Project-specific research and insights
+        
+        **File Structure:**
+        ```
+        docs/
+        ├── portfolio/
+        │   ├── bobo-patent-concept.md
+        │   ├── masters-program-overview.md
+        │   ├── portfolio-strategy-framework.md
+        │   └── design-thinking-methodologies.md
+        ├── projects/
+        │   ├── kairos-agency/
+        │   ├── ey-positioning/
+        │   ├── the-beginning/
+        │   ├── bobo-wine/
+        │   └── bha-engagement/
+        └── resources/
+            ├── innovation-intelligence/
+            ├── design-tools/
+            └── templates/
+        ```
+        
+        ---
+        
+        ### 🎨 Design Workshop Studio Development  
+        **Priority:** Medium-High  
+        **Description:** Create systematic approach to designing play-based learning workshops
+        **Progress:** 5%
+        
+        **Vision:**
+        - Input: Context, business needs, participant profiles, desired outcomes
+        - Output: Complete workshop blueprint with play-based elements + structured business components
+        - Special focus: Creating specific "feeling and energy" followed by targeted business application
+        
+        **Components to Develop:**
+        - [ ] Workshop design framework/template
+        - [ ] Play-based learning methodology library
+        - [ ] Energy/feeling state design principles  
+        - [ ] Business problem-solving integration methods
+        - [ ] Participant engagement optimization
+        - [ ] Workshop facilitation guides
+        - [ ] Assessment and feedback mechanisms
+        
+        ---
+        
+        ### 📝 Labor Day Blog Post
+        **Priority:** High
+        **Target Date:** September 2, 2024
+        **Progress:** 20%
+        
+        **Identified Themes:**
+        1. ✅ **IP Recycling & Creativity Impact** - How reusing intellectual property affects creative innovation
+        2. ✅ **Ecosystem Awareness Necessity** - The need for greater cross-industry pattern recognition
+        3. ❓ **Third Theme TBD** - Additional insight from portfolio development experience
+        
+        **Next Actions:**
+        - [ ] Identify third theme based on recent insights
+        - [ ] Draft outline connecting all three themes
+        - [ ] Write first draft with portfolio examples
+        - [ ] Edit and polish for publication
+        
+        ---
+        
+        ## Task Integration with Current Projects
+        
+        ### How These Tasks Support Existing Portfolio:
+        
+        **Kairos Design Agency:**
+        - Document repository → Client presentation materials
+        - Workshop studio → Core service offering differentiation
+        - Blog post → Thought leadership and marketing
+        
+        **EY Studio+ Positioning:**
+        - Workshop methodology → Unique value proposition for ecosystem partnerships
+        - Document organization → Professional credibility demonstration
+        - Blog content → Industry expertise showcase
+        
+        **The Beginning Partnership:**
+        - Workshop studio → Design methodology for family club experience
+        - Research documentation → Meeting preparation enhancement
+        
+        **Bobo Wine Revival:**
+        - Patent documentation → Strategic foundation for relaunch
+        - Workshop methodology → Customer engagement strategy
+        
+        **Brooklyn Heights Association:**
+        - Workshop studio → Community engagement methodology
+        - Document repository → Professional contribution framework
+        
+        ---
+        
+        ## Implementation Timeline
+        
+        ### Phase 1: Foundation (This Week)
+        - [ ] Create docs/ folder structure in repository ✅
+        - [ ] Upload first batch of contextual documents
+        - [ ] Identify blog post third theme
+        - [ ] Begin workshop studio research
+        
+        ### Phase 2: Development (Next 2 Weeks)  
+        - [ ] Complete document repository organization
+        - [ ] Draft and publish Labor Day blog post
+        - [ ] Develop initial workshop studio methodology
+        
+        ### Phase 3: Integration (Following 2 Weeks)
+        - [ ] Integrate documentation into project workflows
+        - [ ] Test workshop design framework with The Beginning project
+        - [ ] Launch workshop studio as Kairos service offering component
+        
+        ---
+        
+        *Last updated: $(date -u '+%Y-%m-%d %H:%M UTC')*
+        *This task repository updates automatically based on portfolio discussions.*
+        EOF
+        
+        echo "Created/updated portfolio-tasks.md"
+    
+    - name: Update dashboard
+      if: steps.parse.outputs.action == 'dashboard-update'
+      run: |
+        python3 << 'EOF'
+        import re
+        
+        # Read the HTML file
+        with open('index.html', 'r') as file:
+            content = file.read()
+        
+        # Get values from environment
+        import os
+        kairos_progress = os.environ.get('KAIROS_PROGRESS')
+        ey_progress = os.environ.get('EY_PROGRESS')
+        beginning_progress = os.environ.get('BEGINNING_PROGRESS')
+        bobo_progress = os.environ.get('BOBO_PROGRESS')
+        bha_progress = os.environ.get('BHA_PROGRESS')
+        portfolio_momentum = os.environ.get('PORTFOLIO_MOMENTUM')
+        todays_focus = os.environ.get('TODAYS_FOCUS')
+        
+        print(f"Updating dashboard: Portfolio {portfolio_momentum}%, Kairos {kairos_progress}%, EY {ey_progress}%")
+        
+        # Update portfolio momentum value and bar
+        content = re.sub(
+            r'(id="momentum-value" class="text-3xl font-bold text-gray-900">)\d+(%</p>)',
+            f'\\g<1>{portfolio_momentum}\\g<2>',
+            content
+        )
+        content = re.sub(
+            r'(id="momentum-bar"[^>]*style="width: )\d+(%")',
+            f'\\g<1>{portfolio_momentum}\\g<2>',
+            content
+        )
+        
+        # Update today's focus
+        content = re.sub(
+            r'(<p class="text-lg opacity-90" id="todays-focus">)[^<]*(</p>)',
+            f'\\g<1>{todays_focus}\\g<2>',
+            content
+        )
+        
+        # Update Kairos progress
+        content = re.sub(
+            r'(<span id="kairos-progress">)\d+(%</span>)',
+            f'\\g<1>{kairos_progress}\\g<2>',
+            content
+        )
+        
+        # Update progress bars with more specific targeting
+        # Replace progress bars in order they appear in HTML
+        
+        # First occurrence: Kairos (35%)
+        content = re.sub(
+            r'(progress-bar" style="width: )35(%">)',
+            f'\\g<1>{kairos_progress}\\g<2>',
+            content, count=1
+        )
+        
+        # Second occurrence: EY (60%)
+        content = re.sub(
+            r'(progress-bar" style="width: )60(%">)',
+            f'\\g<1>{ey_progress}\\g<2>',
+            content, count=1
+        )
+        
+        # Third occurrence: Beginning (20%)
+        content = re.sub(
+            r'(progress-bar" style="width: )20(%">)',
+            f'\\g<1>{beginning_progress}\\g<2>',
+            content, count=1
+        )
+        
+        # Fourth occurrence: Bobo (15%)
+        content = re.sub(
+            r'(progress-bar" style="width: )15(%">)',
+            f'\\g<1>{bobo_progress}\\g<2>',
+            content, count=1
+        )
+        
+        # Fifth occurrence: BHA (40%)
+        content = re.sub(
+            r'(progress-bar" style="width: )40(%">)',
+            f'\\g<1>{bha_progress}\\g<2>',
+            content, count=1
+        )
+        
+        # Add task section if it doesn't exist
+        if 'Active Tasks & Ideas' not in content:
+            task_section = '''
+            <!-- Task Management Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Active Tasks & Ideas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                        <h4 class="font-medium text-blue-800 mb-2">📁 Document Repository</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Bobo patent documentation</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Masters program overview</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Design frameworks</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-blue-600 mt-2">Progress: <span id="doc-progress">15%</span></p>
+                    </div>
+
+                    <div class="bg-purple-50 border border-purple-200 rounded p-4">
+                        <h4 class="font-medium text-purple-800 mb-2">🎨 Workshop Studio</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Play-based learning research</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Workshop design framework</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>First workshop execution</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-purple-600 mt-2">Progress: <span id="workshop-progress">5%</span></p>
+                    </div>
+
+                    <div class="bg-green-50 border border-green-200 rounded p-4">
+                        <h4 class="font-medium text-green-800 mb-2">📝 Labor Day Blog Post</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                                <span>IP recycling theme</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                                <span>Ecosystem awareness theme</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Third theme identification</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-green-600 mt-2">Target: Sept 2 • <span id="blog-progress">20%</span></p>
+                    </div>
+                </div>
+            </div>'''
+            
+            # Insert before Daily Actions section
+            content = content.replace('<!-- Daily Actions -->', task_section + '\n            <!-- Daily Actions -->')
+        
+        # Add timestamp
+        import datetime
+        timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
+        content = re.sub(
+            r'(<p class="text-gray-600 mt-1">)[^<]*(</p>)',
+            f'\\g<1>Last updated: {timestamp} • Real-time execution dashboard\\g<3>',
+            content
+        )
+        
+        # Write back
+        with open('index.html', 'w') as file:
+            file.write(content)
+        
+        print("Dashboard updated successfully")
+        EOF
+      env:
+        KAIROS_PROGRESS: ${{ steps.parse.outputs.kairos_progress }}
+        EY_PROGRESS: ${{ steps.parse.outputs.ey_progress }}
+        BEGINNING_PROGRESS: ${{ steps.parse.outputs.beginning_progress }}
+        BOBO_PROGRESS: ${{ steps.parse.outputs.bobo_progress }}
+        BHA_PROGRESS: ${{ steps.parse.outputs.bha_progress }}
+        PORTFOLIO_MOMENTUM: ${{ steps.parse.outputs.portfolio_momentum }}
+        TODAYS_FOCUS: ${{ steps.parse.outputs.todays_focus }}
+    
+    - name: Upload document
+      if: steps.parse.outputs.action == 'document-upload'
+      run: |
+        DOCUMENT_PATH="${{ steps.parse.outputs.document_path }}"
+        
+        if [ -n "$DOCUMENT_PATH" ]; then
+          # Create directory if it doesn't exist
+          mkdir -p "$(dirname "$DOCUMENT_PATH")"
+          
+          # Get document content from issue body
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          echo "$ISSUE_BODY" | sed '1,/^---$/d' > "$DOCUMENT_PATH"
+          
+          echo "Uploaded document to $DOCUMENT_PATH"
+        fi
+    
+    - name: Commit all changes
+      run: |
+        git config --local user.email "watson@portfolio.ai"
+        git config --local user.name "Portfolio Watson"
+        git add .
+        
+        if ! git diff --staged --quiet; then
+          COMMIT_MSG="Watson API: "
+          if [ "${{ steps.parse.outputs.action }}" = "dashboard-update" ]; then
+            COMMIT_MSG="${COMMIT_MSG}Dashboard update - Portfolio ${{ steps.parse.outputs.portfolio_momentum }}% momentum"
+          elif [ "${{ steps.parse.outputs.action }}" = "task-update" ]; then
+            COMMIT_MSG="${COMMIT_MSG}Task documentation update"
+          elif [ "${{ steps.parse.outputs.action }}" = "document-upload" ]; then
+            COMMIT_MSG="${COMMIT_MSG}Document upload to ${{ steps.parse.outputs.document_path }}"
+          fi
+          
+          git commit -m "$COMMIT_MSG"
+          git push
+          echo "Changes committed and pushed"
+        else
+          echo "No changes to commit"
+        fi
+    
+    - name: Close trigger issue
+      if: github.event_name == 'issues'
+      run: |
+        curl -X PATCH \
+          -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+          -d '{"state":"closed"}' || true
