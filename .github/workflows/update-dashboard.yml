@@ -79,12 +79,12 @@ jobs:
     
     - name: Update dashboard with new data
       run: |
-        # Update the HTML file with new progress data
-        sed -i 's/id="momentum-value" class="text-3xl font-bold text-gray-900">[0-9]*%/id="momentum-value" class="text-3xl font-bold text-gray-900">${{ github.event.inputs.portfolio_momentum }}%/g' index.html
-        sed -i 's/style="width: [0-9]*%"/style="width: ${{ github.event.inputs.portfolio_momentum }}%"/g' index.html
+        # Update portfolio momentum
+        sed -i "s/id=\"momentum-value\" class=\"text-3xl font-bold text-gray-900\">[0-9]*%/id=\"momentum-value\" class=\"text-3xl font-bold text-gray-900\">${{ github.event.inputs.portfolio_momentum }}%/g" index.html
+        sed -i "s/id=\"momentum-bar\" class=\"bg-blue-600 h-2 rounded-full progress-bar\" style=\"width: [0-9]*%\"/id=\"momentum-bar\" class=\"bg-blue-600 h-2 rounded-full progress-bar\" style=\"width: ${{ github.event.inputs.portfolio_momentum }}%\"/g" index.html
         
         # Update today's focus
-        sed -i 's/<p class="text-lg opacity-90" id="todays-focus">.*<\/p>/<p class="text-lg opacity-90" id="todays-focus">${{ github.event.inputs.todays_focus }}<\/p>/g' index.html
+        sed -i "s/<p class=\"text-lg opacity-90\" id=\"todays-focus\">.*<\/p>/<p class=\"text-lg opacity-90\" id=\"todays-focus\">${{ github.event.inputs.todays_focus }}<\/p>/g" index.html
         
         # Update Kairos progress
         sed -i 's/<span id="kairos-progress">[0-9]*%/<span id="kairos-progress">${{ github.event.inputs.kairos_progress }}%/g' index.html
