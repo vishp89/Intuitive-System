@@ -2,27 +2,32 @@
 name: Update Portfolio Dashboard
 
 on:
+  # API trigger - Watson can call this with data
+  repository_dispatch:
+    types: [update-dashboard]
+  
+  # Also allow manual testing if needed
   workflow_dispatch:
     inputs:
       kairos_progress:
         description: 'Kairos Progress %'
-        required: true
+        required: false
         default: '35'
       ey_progress:
         description: 'EY Progress %'
-        required: true
+        required: false  
         default: '60'
       beginning_progress:
         description: 'Beginning Progress %'
-        required: true
+        required: false
         default: '20'
       portfolio_momentum:
         description: 'Portfolio Momentum %'
-        required: true
+        required: false
         default: '78'
       todays_focus:
         description: 'Today Focus'
-        required: true
+        required: false
         default: 'Strategic execution'
 
 jobs:
@@ -33,9 +38,26 @@ jobs:
       with:
         token: ${{ secrets.REPO_TOKEN }}
     
+    - name: Set progress values
+      id: values
+      run: |
+        # Use API payload data if available, otherwise use workflow inputs or defaults
+        if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+          echo "kairos_progress=${{ github.event.client_payload.kairos_progress || '35' }}" >> $GITHUB_OUTPUT
+          echo "ey_progress=${{ github.event.client_payload.ey_progress || '60' }}" >> $GITHUB_OUTPUT
+          echo "beginning_progress=${{ github.event.client_payload.beginning_progress || '20' }}" >> $GITHUB_OUTPUT
+          echo "portfolio_momentum=${{ github.event.client_payload.portfolio_momentum || '78' }}" >> $GITHUB_OUTPUT
+          echo "todays_focus=${{ github.event.client_payload.todays_focus || 'Strategic execution' }}" >> $GITHUB_OUTPUT
+        else
+          echo "kairos_progress=${{ inputs.kairos_progress }}" >> $GITHUB_OUTPUT
+          echo "ey_progress=${{ inputs.ey_progress }}" >> $GITHUB_OUTPUT  
+          echo "beginning_progress=${{ inputs.beginning_progress }}" >> $GITHUB_OUTPUT
+          echo "portfolio_momentum=${{ inputs.portfolio_momentum }}" >> $GITHUB_OUTPUT
+          echo "todays_focus=${{ inputs.todays_focus }}" >> $GITHUB_OUTPUT
+        fi
+    
     - name: Update dashboard
       run: |
-        # Simple updates without complex regex
         python3 << 'EOF'
         import re
         
@@ -43,36 +65,90 @@ jobs:
         with open('index.html', 'r') as file:
             content = file.read()
         
-        # Update momentum value
+        # Get values from environment
+        import os
+        kairos_progress = os.environ.get('KAIROS_PROGRESS', '35')
+        ey_progress = os.environ.get('EY_PROGRESS', '60') 
+        beginning_progress = os.environ.get('BEGINNING_PROGRESS', '20')
+        portfolio_momentum = os.environ.get('PORTFOLIO_MOMENTUM', '78')
+        todays_focus = os.environ.get('TODAYS_FOCUS', 'Strategic execution')
+        
+        # Update momentum value and bar
         content = re.sub(
-            r'id="momentum-value" class="text-3xl font-bold text-gray-900">\d+%',
-            f'id="momentum-value" class="text-3xl font-bold text-gray-900">${{ inputs.portfolio_momentum }}%',
+            r'(id="momentum-value" class="text-3xl font-bold text-gray-900">)\d+(%</p>)',
+            f'\\g<1>{portfolio_momentum}\\g<2>',
             content
         )
-        
-        # Update momentum bar
         content = re.sub(
-            r'id="momentum-bar"[^>]*style="width: \d+%"',
-            f'id="momentum-bar" class="bg-blue-600 h-2 rounded-full progress-bar" style="width: ${{ inputs.portfolio_momentum }}%"',
+            r'(id="momentum-bar"[^>]*style="width: )\d+(%")',
+            f'\\g<1>{portfolio_momentum}\\g<2>',
             content
         )
         
         # Update today's focus
         content = re.sub(
-            r'<p class="text-lg opacity-90" id="todays-focus">[^<]*</p>',
-            f'<p class="text-lg opacity-90" id="todays-focus">${{ inputs.todays_focus }}</p>',
+            r'(<p class="text-lg opacity-90" id="todays-focus">)[^<]*(</p>)',
+            f'\\g<1>{todays_focus}\\g<2>',
+            content
+        )
+        
+        # Update Kairos progress (first progress bar with 35%)
+        content = re.sub(
+            r'(<span id="kairos-progress">)\d+(%</span>)',
+            f'\\g<1>{kairos_progress}\\g<2>',
+            content
+        )
+        content = re.sub(
+            r'(class="bg-blue-600 h-2 rounded-full progress-bar" style="width: )35(%")',
+            f'\\g<1>{kairos_progress}\\g<2>',
+            content
+        )
+        
+        # Update EY progress (60%)
+        content = re.sub(
+            r'(class="bg-blue-600 h-2 rounded-full progress-bar" style="width: )60(%")',
+            f'\\g<1>{ey_progress}\\g<2>',
+            content
+        )
+        
+        # Update Beginning progress (20%)
+        content = re.sub(
+            r'(class="bg-blue-600 h-2 rounded-full progress-bar" style="width: )20(%")',
+            f'\\g<1>{beginning_progress}\\g<2>',
+            content
+        )
+        
+        # Add timestamp
+        import datetime
+        timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
+        content = re.sub(
+            r'(<p class="text-gray-600 mt-1">)([^<]*)(</p>)',
+            f'\\g<1>Last updated: {timestamp} • Real-time execution dashboard\\g<3>',
             content
         )
         
         # Write back
         with open('index.html', 'w') as file:
             file.write(content)
+        
+        print(f"Updated dashboard: Portfolio {portfolio_momentum}%, Kairos {kairos_progress}%, EY {ey_progress}%, Beginning {beginning_progress}%")
         EOF
+      env:
+        KAIROS_PROGRESS: ${{ steps.values.outputs.kairos_progress }}
+        EY_PROGRESS: ${{ steps.values.outputs.ey_progress }}
+        BEGINNING_PROGRESS: ${{ steps.values.outputs.beginning_progress }}
+        PORTFOLIO_MOMENTUM: ${{ steps.values.outputs.portfolio_momentum }}
+        TODAYS_FOCUS: ${{ steps.values.outputs.todays_focus }}
     
     - name: Commit changes
       run: |
         git config --local user.email "watson@portfolio.ai"
         git config --local user.name "Portfolio Watson"
         git add index.html
-        git commit -m "Dashboard update: ${{ inputs.portfolio_momentum }}% momentum" || exit 0
-        git push
+        if ! git diff --staged --quiet; then
+          git commit -m "Dashboard update: ${{ steps.values.outputs.portfolio_momentum }}% momentum, Kairos ${{ steps.values.outputs.kairos_progress }}%, EY ${{ steps.values.outputs.ey_progress }}%, Beginning ${{ steps.values.outputs.beginning_progress }}%"
+          git push
+          echo "Dashboard updated successfully"
+        else
+          echo "No changes to commit"
+        fi
