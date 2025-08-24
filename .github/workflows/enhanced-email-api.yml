@@ -1,13 +1,9 @@
-# .github/workflows/enhanced-email-api.yml
 name: Enhanced Email API
 
 on:
   schedule:
-    # Daily at 7:30 AM Eastern Time (11:30 UTC)
     - cron: '30 11 * * *'
-    # Weekly sprint planning on Mondays at 9:00 AM ET (13:00 UTC)  
     - cron: '0 13 * * 1'
-    # Weekly review on Fridays at 4:00 PM ET (20:00 UTC)
     - cron: '0 20 * * 5'
   issues:
     types: [opened]
@@ -29,267 +25,36 @@ jobs:
         python3 << 'EOF'
         import os
         import re
-        import json
         from datetime import datetime
         
-        # Determine email type and content
-        if os.environ.get('GITHUB_EVENT_NAME') == 'repository_dispatch':
-            # API dispatch
-            email_type = os.environ.get('GITHUB_EVENT_ACTION', 'custom-email')
-            payload = json.loads(os.environ.get('GITHUB_EVENT_CLIENT_PAYLOAD', '{}'))
-            subject = payload.get('subject', 'Portfolio Update from Watson')
-            content = payload.get('content', '')
-        elif 'schedule' in os.environ.get('GITHUB_EVENT_NAME', ''):
-            # Scheduled email
-            schedule = os.environ.get('GITHUB_EVENT_SCHEDULE', '')
-            if '30 11' in schedule:
-                email_type = 'daily-review'
-            elif '0 13' in schedule and '* * 1' in schedule:
-                email_type = 'weekly-sprint'
-            elif '0 20' in schedule and '* * 5' in schedule:
-                email_type = 'weekly-review'
-            else:
-                email_type = 'daily-review'
-            subject = ''
-            content = ''
+        # Determine email type
+        if 'schedule' in os.environ.get('GITHUB_EVENT_NAME', ''):
+            email_type = 'daily-review'
+            subject = 'Daily Portfolio Review'
         else:
-            # Issue-based request
             issue_title = os.environ.get('GITHUB_EVENT_ISSUE_TITLE', '')
             issue_body = os.environ.get('GITHUB_EVENT_ISSUE_BODY', '')
             
             if 'beginning founders' in issue_body.lower():
                 email_type = 'beginning-founders'
-                subject = 'The Beginning Partnership - Strategic Framework & Questions'
+                subject = 'The Beginning Partnership - Strategic Framework'
             elif 'daily review' in issue_body.lower():
                 email_type = 'daily-review'
                 subject = 'Daily Portfolio Review'
-            elif 'client email' in issue_body.lower():
-                email_type = 'client-outreach'
-                subject = 'Strategic Partnership Opportunity'
             else:
                 email_type = 'custom'
-                subject = re.search(r'Subject: *(.+)', issue_body)
-                subject = subject.group(1) if subject else 'Portfolio Communication from Watson'
-            
-            content = issue_body
+                subject = 'Portfolio Communication from Watson'
         
-        # Write outputs
         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            f.write(f"email_type={email_type}\\n")
-            f.write(f"subject={subject}\\n")
-            # Escape content for GitHub Actions
-            escaped_content = content.replace('\\n', '\\\\n').replace('"', '\\\\"')
-            f.write(f"content={escaped_content}\\n")
+            f.write(f"email_type={email_type}\n")
+            f.write(f"subject={subject}\n")
         
-        print(f"Email type: {email_type}")
-        print(f"Subject: {subject}")
+        print(f"Email type: {email_type}, Subject: {subject}")
         EOF
       env:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
-        GITHUB_EVENT_ACTION: ${{ github.event.action }}
-        GITHUB_EVENT_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
-        GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         GITHUB_EVENT_ISSUE_TITLE: ${{ github.event.issue.title }}
         GITHUB_EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
-    
-    - name: Generate email content
-      id: generate
-      run: |
-        python3 << 'EOF'
-        import os
-        from datetime import datetime
-        
-        email_type = os.environ.get('EMAIL_TYPE')
-        custom_content = os.environ.get('CONTENT', '')
-        
-        def generate_daily_review():
-            return '''
-            <div class="highlight">
-                <h3>⚡ Today\\'s Strategic Priorities</h3>
-                <ul>
-                    <li><strong>HIGH:</strong> The Beginning meeting preparation & research</li>
-                    <li><strong>HIGH:</strong> Labor Day blog third theme identification</li>
-                    <li><strong>MEDIUM:</strong> Email/Dashboard UX review completion</li>
-                </ul>
-            </div>
-
-            <div class="section">
-                <h4>🚀 Current Portfolio Status</h4>
-                <p><strong>Kairos Agency:</strong> 25% - Foundation solid, execution phase needed</p>
-                <p><strong>EY Studio+:</strong> 15% - Critical gap in partnership targeting strategy</p>
-                <p><strong>The Beginning:</strong> 5% - Preparation deficit for high-priority project</p>
-                <p><strong>Portfolio Momentum:</strong> 20% - Systems operational, execution focus required</p>
-            </div>
-
-            <div class="section">
-                <h4>📋 Active Tasks Progress</h4>
-                <ul>
-                    <li>📁 Document Repository: 15% (Upload contextual materials)</li>
-                    <li>🎨 Workshop Studio: 5% (Play-based learning methodology)</li>
-                    <li>📝 Labor Day Blog: 20% (2/3 themes identified, draft needed)</li>
-                    <li>📱 UX Review: 10% (Email/Dashboard optimization assessment)</li>
-                </ul>
-            </div>
-
-            <div class="section">
-                <h4>⚾ Motivation Tracker</h4>
-                <p>Red Sox standings integrated on dashboard for daily motivation check!</p>
-            </div>
-            '''
-        
-        def generate_beginning_founders():
-            return '''
-            <div class="section">
-                <h4>Strategic Partnership Framework</h4>
-                <p>Based on our portfolio development discussions and design thinking methodology, I\\'ve developed a comprehensive approach for our partnership conversation:</p>
-            </div>
-            
-            <div class="section">
-                <h4>🎯 Value Proposition Framework</h4>
-                <ul>
-                    <li><strong>Design Thinking Application:</strong> Systematic methodology for family club experience optimization</li>
-                    <li><strong>Community Integration:</strong> Brooklyn Heights Association network and governance experience</li>
-                    <li><strong>Strategic Portfolio Approach:</strong> Multi-stakeholder value creation and ecosystem thinking</li>
-                    <li><strong>Workshop Methodology:</strong> Play-based learning integration with business objectives</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h4>🔍 Strategic Discovery Questions</h4>
-                <p><strong>Family Experience Design:</strong></p>
-                <ul>
-                    <li>What specific family engagement challenges are you solving that existing venues don\\'t address?</li>
-                    <li>How do you envision different age groups interacting within the 45k sq ft space?</li>
-                    <li>What does \\"success\\" look like from both parent and child perspectives?</li>
-                </ul>
-                
-                <p><strong>Community Integration:</strong></p>
-                <ul>
-                    <li>How will The Beginning integrate with the broader Brooklyn Heights community ecosystem?</li>
-                    <li>What partnerships with local organizations (schools, cultural institutions) are you considering?</li>
-                    <li>How might we leverage community networks for both marketing and programming?</li>
-                </ul>
-                
-                <p><strong>Business Model & Operations:</strong></p>
-                <ul>
-                    <li>What membership models are you exploring, and how do they align with family financial planning?</li>
-                    <li>What success metrics matter most in the first 12-18 months?</li>
-                    <li>How are you thinking about seasonal programming and adaptability?</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h4>🛠️ Proposed Collaboration Approach</h4>
-                <ol>
-                    <li><strong>Discovery Workshop:</strong> 2-hour facilitated session to map family journey experiences</li>
-                    <li><strong>Community Research:</strong> Leverage BHA network for family needs assessment</li>
-                    <li><strong>Experience Design:</strong> Create detailed service blueprints for different family scenarios</li>
-                    <li><strong>Prototype Development:</strong> Test key experience elements before full launch</li>
-                </ol>
-            </div>
-            
-            <div class="section">
-                <h4>📅 Immediate Next Steps</h4>
-                <p>I propose we schedule a 90-minute strategic planning session where we can:</p>
-                <ul>
-                    <li>Review your current vision and identify strategic priorities</li>
-                    <li>Discuss the discovery questions above in detail</li>
-                    <li>Define the scope and timeline for our collaboration</li>
-                    <li>Establish success metrics and project milestones</li>
-                </ul>
-            </div>
-            '''
-        
-        def generate_custom_email():
-            # Parse custom content for structure
-            content_sections = custom_content.split('\\n\\n')
-            html_content = '<div class="section">'
-            
-            for section in content_sections:
-                if section.strip():
-                    # Convert simple formatting
-                    section = section.replace('**', '<strong>').replace('**', '</strong>')
-                    section = section.replace('*', '<em>').replace('*', '</em>')
-                    html_content += f'<p>{section.strip()}</p>'
-            
-            html_content += '</div>'
-            return html_content
-        
-        # Generate content based on type
-        if email_type == 'daily-review':
-            email_content = generate_daily_review()
-            email_header = '📊 Daily Portfolio Review'
-            
-        elif email_type == 'beginning-founders':
-            email_content = generate_beginning_founders()
-            email_header = '🏗️ The Beginning Partnership - Strategic Framework'
-            
-        elif email_type == 'weekly-sprint':
-            email_content = '''
-            <div class="section">
-                <h4>🎯 This Week\\'s Strategic Priorities</h4>
-                <ol>
-                    <li><strong>The Beginning:</strong> Complete meeting preparation and value proposition development</li>
-                    <li><strong>Labor Day Blog:</strong> Identify third theme and complete first draft</li>
-                    <li><strong>Kairos Foundation:</strong> Domain acquisition and service framework development</li>
-                    <li><strong>EY Positioning:</strong> Ecosystem partnership target identification</li>
-                </ol>
-            </div>
-            
-            <div class="section">
-                <h4>📋 Weekly Sprint Goals</h4>
-                <p><strong>Monday-Tuesday:</strong> The Beginning research and presentation development</p>
-                <p><strong>Wednesday:</strong> Blog post third theme identification and outline creation</p>
-                <p><strong>Thursday-Friday:</strong> Kairos domain acquisition and EY partnership mapping</p>
-            </div>
-            '''
-            email_header = '🚀 Weekly Sprint Planning'
-            
-        elif email_type == 'weekly-review':
-            email_content = '''
-            <div class="section">
-                <h4>📊 Week Performance Assessment</h4>
-                <p>Please provide honest assessment of this week\\'s execution:</p>
-                <ul>
-                    <li><strong>Daily Review Completion:</strong> ___/7 days completed</li>
-                    <li><strong>Sprint Goals Achievement:</strong> ___% of planned deliverables</li>
-                    <li><strong>Strategic Momentum:</strong> Accelerating / Steady / Declining</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h4>🧠 Pattern Recognition</h4>
-                <ul>
-                    <li><strong>What worked exceptionally well this week?</strong></li>
-                    <li><strong>What pattern of failure or friction emerged?</strong></li>
-                    <li><strong>What cross-project synergy did you discover?</strong></li>
-                    <li><strong>What blog-worthy insight crystallized?</strong></li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h4>🎯 Next Week Architecture</h4>
-                <p>Based on this week\\'s results, what should be next week\\'s focus priorities?</p>
-            </div>
-            '''
-            email_header = '📈 Weekly Performance Review'
-            
-        else:
-            email_content = generate_custom_email()
-            email_header = '📧 Custom Portfolio Communication'
-        
-        # Write outputs
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            f.write(f"email_header={email_header}\\n")
-            # Escape HTML content for GitHub Actions
-            escaped_html = email_content.replace('\\n', '\\\\n').replace('"', '\\\\"')
-            f.write(f"email_html={escaped_html}\\n")
-        
-        print(f"Generated {email_type} email content")
-        EOF
-      env:
-        EMAIL_TYPE: ${{ steps.parse.outputs.email_type }}
-        CONTENT: ${{ steps.parse.outputs.content }}
     
     - name: Send email
       uses: dawidd6/action-send-mail@v3
@@ -300,7 +65,7 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         to: ${{ secrets.YOUR_EMAIL }}
         from: Portfolio Watson <${{ secrets.EMAIL_USERNAME }}>
-        subject: ${{ steps.parse.outputs.subject || steps.generate.outputs.email_header }}
+        subject: ${{ steps.parse.outputs.subject }}
         html_body: |
           <!DOCTYPE html>
           <html>
@@ -311,31 +76,81 @@ jobs:
                   .content { padding: 20px; }
                   .section { background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px; }
                   .highlight { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                  ul { padding-left: 20px; }
-                  ol { padding-left: 20px; }
                   .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
-                  .footer { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
               </style>
           </head>
           <body>
               <div class="header">
-                  <h1>${{ steps.generate.outputs.email_header }}</h1>
-                  <p>Generated: ${{ github.event.repository.updated_at }}</p>
+                  <h1>${{ steps.parse.outputs.email_type == 'daily-review' && '📊 Daily Portfolio Review' || steps.parse.outputs.email_type == 'beginning-founders' && '🏗️ The Beginning Partnership Framework' || '📧 Portfolio Communication' }}</h1>
+                  <p>Generated automatically by Watson</p>
               </div>
               
               <div class="content">
-                  ${{ steps.generate.outputs.email_html }}
+                  ${{ steps.parse.outputs.email_type == 'daily-review' && '
+                  <div class="highlight">
+                      <h3>⚡ Today\'s Strategic Priorities</h3>
+                      <ul>
+                          <li><strong>HIGH:</strong> The Beginning meeting preparation</li>
+                          <li><strong>HIGH:</strong> Labor Day blog third theme identification</li>
+                          <li><strong>MEDIUM:</strong> Email/Dashboard UX review</li>
+                      </ul>
+                  </div>
+
+                  <div class="section">
+                      <h4>🚀 Portfolio Status</h4>
+                      <p><strong>Kairos Agency:</strong> 25% - Foundation solid, execution needed</p>
+                      <p><strong>EY Studio+:</strong> 15% - Partnership targeting gap</p>
+                      <p><strong>The Beginning:</strong> 5% - Critical preparation needed</p>
+                      <p><strong>Portfolio Momentum:</strong> 20% - Systems built, execution focus</p>
+                  </div>
+
+                  <div class="section">
+                      <h4>⚾ Motivation Check</h4>
+                      <p>Red Sox standings available on dashboard for daily motivation!</p>
+                  </div>
+                  ' || steps.parse.outputs.email_type == 'beginning-founders' && '
+                  <div class="section">
+                      <h4>🎯 Strategic Partnership Framework</h4>
+                      <p>Based on our portfolio discussions, here\'s a comprehensive approach for The Beginning partnership:</p>
+                      
+                      <h5>Value Proposition:</h5>
+                      <ul>
+                          <li>Design thinking methodology for family club experience</li>
+                          <li>Brooklyn Heights community integration expertise</li>
+                          <li>Strategic portfolio approach to project development</li>
+                      </ul>
+                      
+                      <h5>Key Discovery Questions:</h5>
+                      <ul>
+                          <li>What specific family engagement challenges are you solving?</li>
+                          <li>How will The Beginning integrate with Brooklyn Heights community?</li>
+                          <li>What success metrics matter most in the first year?</li>
+                          <li>How are you thinking about membership models and pricing?</li>
+                      </ul>
+                      
+                      <h5>Proposed Collaboration:</h5>
+                      <ul>
+                          <li>Discovery workshop to map family journey experiences</li>
+                          <li>Community research via BHA network</li>
+                          <li>Experience design and service blueprints</li>
+                          <li>Prototype testing before full launch</li>
+                      </ul>
+                  </div>
+                  ' || '
+                  <div class="section">
+                      <h4>Custom Communication</h4>
+                      <p>Portfolio update and strategic communication from Watson.</p>
+                  </div>
+                  '}}
                   
                   <div class="section">
                       <h4>🔗 Quick Access</h4>
                       <a href="https://vishp89.github.io/Intuitive-System/" class="button">📊 View Dashboard</a>
-                      <a href="https://github.com/vishp89/Intuitive-System/tree/main/docs" class="button">📁 Access Documents</a>
                   </div>
                   
-                  <div class="footer">
+                  <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
                       <h4>🤖 Watson Integration</h4>
-                      <p>This email was generated automatically based on your portfolio management system. Dashboard includes live updates and task tracking.</p>
-                      <p><strong>Reply to this email</strong> with progress updates, and I'll process them into your dashboard automatically.</p>
+                      <p>This email was generated automatically. Dashboard updated with current progress and flexible content management active.</p>
                   </div>
               </div>
           </body>
