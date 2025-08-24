@@ -1,0 +1,413 @@
+# .github/workflows/enhanced-dashboard-api.yml
+name: Enhanced Dashboard API
+
+on:
+  issues:
+    types: [opened]
+  repository_dispatch:
+    types: [dashboard-update, content-modify]
+
+jobs:
+  process-dashboard-request:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.title, '[DASHBOARD]') || contains(github.event.issue.title, '[CONTENT]') || github.event_name == 'repository_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.REPO_TOKEN }}
+    
+    - name: Setup Python environment
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install requests beautifulsoup4
+    
+    - name: Parse request and update dashboard
+      run: |
+        python3 << 'EOF'
+        import re
+        import requests
+        import json
+        import os
+        from datetime import datetime
+        
+        def get_sports_data(sport_type, league=None, team=None):
+            """Flexible sports data fetcher"""
+            try:
+                if sport_type == 'baseball' and league == 'AL East':
+                    url = "https://statsapi.mlb.com/api/v1/standings?leagueId=103&season=2024"
+                    response = requests.get(url)
+                    data = response.json()
+                    
+                    standings = []
+                    for record in data['records'][0]['teamRecords'][:5]:
+                        team_name = record['team']['name']
+                        wins = record['wins']
+                        losses = record['losses']
+                        games_back = record.get('gamesBack', '0')
+                        
+                        is_favorite = team and team.lower() in team_name.lower()
+                        standings.append({
+                            'name': team_name,
+                            'record': f"{wins}-{losses}",
+                            'gb': games_back,
+                            'favorite': is_favorite
+                        })
+                    
+                    return {
+                        'title': 'AL East Standings',
+                        'emoji': '⚾',
+                        'data': standings,
+                        'note': f'Live standings • Go {team}! 🔴⚫' if team else 'Live MLB standings'
+                    }
+                
+                elif sport_type == 'basketball' and league == 'NBA Eastern':
+                    # Placeholder for NBA API - would be similar structure
+                    return {
+                        'title': 'NBA Eastern Conference',
+                        'emoji': '🏀',
+                        'data': [
+                            {'name': 'Celtics', 'record': '45-20', 'gb': '0', 'favorite': True},
+                            {'name': 'Heat', 'record': '42-23', 'gb': '3', 'favorite': False},
+                            {'name': '76ers', 'record': '40-25', 'gb': '5', 'favorite': False}
+                        ],
+                        'note': f'Conference standings • Go {team}!' if team else 'Live NBA standings'
+                    }
+                
+                elif sport_type == 'remove':
+                    return None
+                    
+            except Exception as e:
+                print(f"Error fetching {sport_type} data: {e}")
+                return None
+        
+        def create_flexible_widget(widget_data, widget_id="sports-widget"):
+            """Create HTML for any sports widget"""
+            if not widget_data:
+                return ""
+                
+            html = f'''
+            <div id="{widget_id}" class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                <div class="flex items-center mb-2">
+                    <span class="text-lg">{widget_data['emoji']}</span>
+                    <h3 class="text-sm font-bold text-gray-900 ml-2">{widget_data['title']}</h3>
+                </div>
+                <div class="space-y-1">
+            '''
+            
+            for i, team in enumerate(widget_data['data']):
+                is_favorite = team.get('favorite', False)
+                team_class = 'text-red-600 font-medium' if is_favorite else 'text-gray-700'
+                html += f'''
+                    <div class="flex justify-between text-xs {team_class}">
+                        <span>{i+1}. {team['name']}</span>
+                        <span>{team['record']} ({team['gb']} GB)</span>
+                    </div>
+                '''
+            
+            html += f'''
+                </div>
+                <p class="text-xs text-gray-500 mt-2">{widget_data['note']}</p>
+            </div>
+            '''
+            return html
+        
+        def parse_content_request(text):
+            """Parse content modification requests from issue text"""
+            modifications = []
+            
+            # Sports widgets
+            if re.search(r'add.*baseball|AL East|Red Sox', text, re.IGNORECASE):
+                modifications.append({
+                    'action': 'add_widget',
+                    'type': 'sports',
+                    'sport': 'baseball',
+                    'league': 'AL East',
+                    'team': 'Red Sox',
+                    'id': 'sports-widget'
+                })
+            
+            if re.search(r'add.*basketball|NBA|Celtics', text, re.IGNORECASE):
+                modifications.append({
+                    'action': 'add_widget',
+                    'type': 'sports',
+                    'sport': 'basketball', 
+                    'league': 'NBA Eastern',
+                    'team': 'Celtics',
+                    'id': 'sports-widget'
+                })
+            
+            if re.search(r'remove.*baseball|remove.*AL East|remove.*sports', text, re.IGNORECASE):
+                modifications.append({
+                    'action': 'remove_widget',
+                    'id': 'sports-widget'
+                })
+            
+            # Custom sections
+            custom_add = re.search(r'add section:?\s*([^\\n]+)', text, re.IGNORECASE)
+            if custom_add:
+                modifications.append({
+                    'action': 'add_custom',
+                    'content': custom_add.group(1).strip(),
+                    'id': f'custom-{len(modifications)}'
+                })
+            
+            custom_remove = re.search(r'remove section:?\s*([^\\n]+)', text, re.IGNORECASE)
+            if custom_remove:
+                modifications.append({
+                    'action': 'remove_custom',
+                    'content': custom_remove.group(1).strip()
+                })
+            
+            return modifications
+        
+        # Main execution
+        if os.environ.get('GITHUB_EVENT_NAME') == 'repository_dispatch':
+            # API dispatch
+            payload = json.loads(os.environ.get('GITHUB_EVENT_CLIENT_PAYLOAD', '{}'))
+            issue_body = payload.get('modifications', '')
+        else:
+            # Issue-based request
+            issue_title = os.environ.get('GITHUB_EVENT_ISSUE_TITLE', '')
+            issue_body = os.environ.get('GITHUB_EVENT_ISSUE_BODY', '')
+        
+        # Read HTML file
+        with open('index.html', 'r') as file:
+            content = file.read()
+        
+        # Parse and extract progress values
+        progress_data = {}
+        for project in ['Kairos', 'EY', 'Beginning', 'Bobo', 'BHA', 'Portfolio']:
+            match = re.search(f'{project}: *(\\d+)', issue_body)
+            if match:
+                progress_data[project.lower()] = match.group(1)
+        
+        focus_match = re.search(r'Focus: *(.+)', issue_body)
+        if focus_match:
+            progress_data['focus'] = focus_match.group(1)
+        
+        # Update standard dashboard elements if progress data found
+        if progress_data:
+            print("Updating progress data...")
+            
+            if 'portfolio' in progress_data:
+                content = re.sub(
+                    r'(id="momentum-value" class="text-3xl font-bold text-gray-900">)\\d+(%</p>)',
+                    f'\\\\g<1>{progress_data["portfolio"]}\\\\g<2>',
+                    content
+                )
+                content = re.sub(
+                    r'(id="momentum-bar"[^>]*style="width: )\\d+(%")',
+                    f'\\\\g<1>{progress_data["portfolio"]}\\\\g<2>',
+                    content
+                )
+            
+            if 'focus' in progress_data:
+                content = re.sub(
+                    r'(<p class="text-lg opacity-90" id="todays-focus">)[^<]*(</p>)',
+                    f'\\\\g<1>{progress_data["focus"]}\\\\g<2>',
+                    content
+                )
+            
+            # Update project progress bars
+            if 'kairos' in progress_data and 'kairos-progress' in content:
+                content = re.sub(
+                    r'(<span id="kairos-progress">)\\d+(%</span>)',
+                    f'\\\\g<1>{progress_data["kairos"]}\\\\g<2>',
+                    content
+                )
+            
+            # Update progress bars in order
+            original_values = ['35', '60', '20', '15', '40']
+            new_values = [
+                progress_data.get('kairos', '25'),
+                progress_data.get('ey', '15'), 
+                progress_data.get('beginning', '5'),
+                progress_data.get('bobo', '10'),
+                progress_data.get('bha', '30')
+            ]
+            
+            for orig, new in zip(original_values, new_values):
+                content = re.sub(
+                    f'(progress-bar" style="width: ){orig}(%">)',
+                    f'\\\\g<1>{new}\\\\g<2>',
+                    content, count=1
+                )
+        
+        # Parse content modifications
+        modifications = parse_content_request(issue_body)
+        
+        for mod in modifications:
+            print(f"Processing modification: {mod}")
+            
+            if mod['action'] == 'add_widget' and mod['type'] == 'sports':
+                # Remove existing sports widget first
+                content = re.sub(
+                    r'<div id="sports-widget".*?</div>\\s*(?=\\n|<)',
+                    '',
+                    content,
+                    flags=re.DOTALL
+                )
+                
+                # Get new sports data
+                sports_data = get_sports_data(mod['sport'], mod['league'], mod['team'])
+                
+                if sports_data:
+                    widget_html = create_flexible_widget(sports_data, mod['id'])
+                    
+                    # Insert after strategic overview, before today's focus
+                    insert_points = [
+                        content.find('<!-- Today\\'s Focus -->'),
+                        content.find('<div class="bg-gradient-to-r from-blue-600 to-purple-600')
+                    ]
+                    
+                    insert_point = next((p for p in insert_points if p != -1), -1)
+                    
+                    if insert_point != -1:
+                        content = content[:insert_point] + widget_html + '\\n            ' + content[insert_point:]
+                        print(f"Added {mod['sport']} widget")
+            
+            elif mod['action'] == 'remove_widget':
+                # Remove widget by ID
+                widget_pattern = f'<div id="{mod["id"]}".*?</div>\\s*'
+                content = re.sub(widget_pattern, '', content, flags=re.DOTALL)
+                print(f"Removed widget: {mod['id']}")
+            
+            elif mod['action'] == 'add_custom':
+                # Add custom content section
+                custom_html = f'''
+            <div id="custom-section-{mod["id"]}" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <h3 class="text-sm font-bold text-yellow-800 mb-2">📌 Custom Note</h3>
+                <p class="text-sm text-yellow-700">{mod["content"]}</p>
+                <p class="text-xs text-yellow-600 mt-2">Added: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}</p>
+            </div>'''
+                
+                # Insert before today's focus
+                insert_point = content.find('<div class="bg-gradient-to-r from-blue-600 to-purple-600')
+                if insert_point != -1:
+                    content = content[:insert_point] + custom_html + '\\n            ' + content[insert_point:]
+                    print(f"Added custom section: {mod['content'][:50]}...")
+        
+        # Add task section if missing
+        if 'Active Tasks & Ideas' not in content:
+            task_section = '''
+            <!-- Task Management Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Active Tasks & Ideas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                        <h4 class="font-medium text-blue-800 mb-2">📁 Document Repository</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Bobo patent docs</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Masters overview</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-blue-600 mt-2">Progress: 15%</p>
+                    </div>
+
+                    <div class="bg-purple-50 border border-purple-200 rounded p-4">
+                        <h4 class="font-medium text-purple-800 mb-2">🎨 Workshop Studio</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Play-based learning</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Framework design</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-purple-600 mt-2">Progress: 5%</p>
+                    </div>
+
+                    <div class="bg-green-50 border border-green-200 rounded p-4">
+                        <h4 class="font-medium text-green-800 mb-2">📝 Labor Day Blog</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                                <span>IP recycling theme</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                                <span>Ecosystem awareness</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Third theme ID</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-green-600 mt-2">Target: Sept 2</p>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-4">
+                        <h4 class="font-medium text-yellow-800 mb-2">📱 UX Review</h4>
+                        <div class="space-y-1">
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Email template review</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <div class="w-4 h-4 border-2 border-gray-300 rounded mr-2"></div>
+                                <span>Dashboard hierarchy</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-yellow-600 mt-2">Progress: 10%</p>
+                    </div>
+                </div>
+            </div>'''
+            
+            # Insert before Daily Actions
+            daily_actions_pos = content.find('<div class="bg-white rounded-lg shadow-sm p-6 mb-6">\\n        <h2 class="text-xl font-bold text-gray-900 mb-4">Today\\'s Required Actions</h2>')
+            if daily_actions_pos != -1:
+                content = content[:daily_actions_pos] + task_section + '\\n            ' + content[daily_actions_pos:]
+                print("Added task management section")
+        
+        # Update timestamp
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
+        content = re.sub(
+            r'(<p class="text-gray-600 mt-1">)[^<]*(</p>)',
+            f'\\\\g<1>Last updated: {timestamp} • Real-time execution dashboard\\\\g<3>',
+            content
+        )
+        
+        # Write updated content
+        with open('index.html', 'w') as file:
+            file.write(content)
+        
+        print("Dashboard updated successfully")
+        print(f"Processed {len(modifications)} content modifications")
+        
+        EOF
+      env:
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_EVENT_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        GITHUB_EVENT_ISSUE_TITLE: ${{ github.event.issue.title }}
+        GITHUB_EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
+    
+    - name: Commit changes
+      run: |
+        git config --local user.email "watson@portfolio.ai"
+        git config --local user.name "Portfolio Watson"
+        git add index.html
+        
+        if ! git diff --staged --quiet; then
+          git commit -m "Watson: Flexible dashboard update with dynamic content management"
+          git push
+          echo "Dashboard changes committed"
+        else
+          echo "No changes to commit"
+        fi
+    
+    - name: Close trigger issue
+      if: github.event_name == 'issues'
+      run: |
+        curl -X PATCH \
+          -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+          -d '{"state":"closed"}' || true
