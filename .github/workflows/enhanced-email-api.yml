@@ -9,6 +9,7 @@ on:
     types: [opened]
   repository_dispatch:
     types: [email-send, custom-email]
+  workflow_dispatch: 
 
 jobs:
   process-email-request:
