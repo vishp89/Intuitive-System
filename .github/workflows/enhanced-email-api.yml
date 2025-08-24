@@ -9,12 +9,11 @@ on:
     types: [opened]
   repository_dispatch:
     types: [email-send, custom-email]
-  workflow_dispatch: 
 
 jobs:
   process-email-request:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule || contains(github.event.issue.title, '[EMAIL]') || github.event_name == 'repository_dispatch'    
+    if: github.event.schedule || contains(github.event.issue.title, '[EMAIL]') || github.event_name == 'repository_dispatch'
     steps:
     - uses: actions/checkout@v4
       with:
@@ -30,126 +29,221 @@ jobs:
         
         # Determine email type
         if 'schedule' in os.environ.get('GITHUB_EVENT_NAME', ''):
-            email_type = 'daily-review'
-            subject = 'Daily Portfolio Review'
+            schedule = os.environ.get('GITHUB_EVENT_SCHEDULE', '')
+            if '30 11' in schedule:  # 7:30 AM daily
+                email_type = 'morning-review'
+                subject = '🌅 Morning Portfolio Review - Strategic Focus'
+            elif '0 20' in schedule and '* * 5' in schedule:  # Friday evening
+                email_type = 'evening-review'
+                subject = '🌆 Evening Portfolio Review - Week Synthesis'
+            else:
+                email_type = 'daily-review'
+                subject = '📊 Daily Portfolio Review'
         else:
             issue_title = os.environ.get('GITHUB_EVENT_ISSUE_TITLE', '')
             issue_body = os.environ.get('GITHUB_EVENT_ISSUE_BODY', '')
             
             if 'beginning founders' in issue_body.lower():
                 email_type = 'beginning-founders'
-                subject = 'The Beginning Partnership - Strategic Framework'
-            elif 'daily review' in issue_body.lower():
-                email_type = 'daily-review'
-                subject = 'Daily Portfolio Review'
+                subject = '🏗️ The Beginning Partnership - Strategic Framework'
+            elif 'morning review' in issue_body.lower():
+                email_type = 'morning-review'
+                subject = '🌅 Morning Portfolio Review - Strategic Focus'
+            elif 'evening review' in issue_body.lower():
+                email_type = 'evening-review'
+                subject = '🌆 Evening Portfolio Review - Week Synthesis'
             else:
-                email_type = 'custom'
-                subject = 'Portfolio Communication from Watson'
+                email_type = 'daily-review'
+                subject = '📊 Daily Portfolio Review'
         
         # Generate email content based on type
-        def generate_daily_review():
+        def generate_morning_review():
             return '''
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <h3>⚡ Today's Strategic Priorities</h3>
-                <ul>
-                    <li><strong>HIGH:</strong> The Beginning meeting preparation</li>
-                    <li><strong>HIGH:</strong> Labor Day blog third theme identification</li>
-                    <li><strong>MEDIUM:</strong> Email/Dashboard UX review</li>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #856404; margin-top: 0;">⚡ Today's Strategic Priorities</h3>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;"><strong>HIGH PRIORITY:</strong> The Beginning meeting preparation & value proposition development</li>
+                    <li style="margin: 8px 0;"><strong>HIGH PRIORITY:</strong> Labor Day blog third theme identification + first draft</li>
+                    <li style="margin: 8px 0;"><strong>MEDIUM PRIORITY:</strong> Kairos domain acquisition and service framework</li>
+                    <li style="margin: 8px 0;"><strong>ONGOING:</strong> EY ecosystem partnership target mapping</li>
                 </ul>
             </div>
 
-            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
-                <h4>🚀 Portfolio Status</h4>
-                <p><strong>Kairos Agency:</strong> 25% - Foundation solid, execution needed</p>
-                <p><strong>EY Studio+:</strong> 15% - Partnership targeting gap</p>
-                <p><strong>The Beginning:</strong> 5% - Critical preparation needed</p>
-                <p><strong>Portfolio Momentum:</strong> 20% - Systems built, execution focus</p>
+            <div style="background: #f8f9fa; border-left: 6px solid #007bff; margin: 20px 0; padding: 20px;">
+                <h4 style="color: #0056b3; margin-top: 0;">🚀 Current Portfolio Status</h4>
+                <div style="margin: 15px 0;">
+                    <p style="margin: 8px 0;"><strong>Kairos Design Agency:</strong> <span style="color: #28a745;">25%</span> - Foundation established, execution phase critical</p>
+                    <p style="margin: 8px 0;"><strong>EY Studio+ Positioning:</strong> <span style="color: #dc3545;">15%</span> - Major gap in partnership targeting strategy</p>
+                    <p style="margin: 8px 0;"><strong>The Beginning Partnership:</strong> <span style="color: #dc3545;">5%</span> - Severe preparation deficit for high-priority project</p>
+                    <p style="margin: 8px 0;"><strong>Bobo Wine Revival:</strong> <span style="color: #ffc107;">10%</span> - Strategic planning complete, execution needed</p>
+                    <p style="margin: 8px 0;"><strong>Brooklyn Heights Association:</strong> <span style="color: #17a2b8;">30%</span> - Relationship established, structured initiatives pending</p>
+                </div>
+                <p style="margin: 15px 0; padding: 10px; background: #e9ecef; border-radius: 5px;"><strong>Portfolio Momentum:</strong> <span style="color: #dc3545;">20%</span> - Systems operational but execution significantly lagging</p>
             </div>
 
-            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
-                <h4>⚾ Motivation Check</h4>
-                <p>Red Sox standings available on dashboard for daily motivation!</p>
+            <div style="background: #f8f9fa; border-left: 6px solid #28a745; margin: 20px 0; padding: 20px;">
+                <h4 style="color: #155724; margin-top: 0;">📋 Active Tasks Progress</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">📁 <strong>Document Repository:</strong> 15% - Upload Bobo patent, Masters overview, design frameworks</li>
+                    <li style="margin: 8px 0;">🎨 <strong>Workshop Studio Development:</strong> 5% - Play-based learning methodology research needed</li>
+                    <li style="margin: 8px 0;">📝 <strong>Labor Day Blog Post:</strong> 20% - Two themes identified, third theme + draft urgently needed</li>
+                    <li style="margin: 8px 0;">📱 <strong>UX Review:</strong> 10% - Email/Dashboard optimization assessment required</li>
+                </ul>
+            </div>
+
+            <div style="background: #e8f5e8; border: 2px solid #28a745; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #155724; margin-top: 0;">⚾ Daily Motivation Check</h4>
+                <p style="margin: 8px 0;">Red Sox standings integrated on your dashboard - check current AL East position for daily motivation boost!</p>
+                <p style="margin: 8px 0; font-size: 14px; color: #666;">Sports standings update automatically to keep you energized throughout the season.</p>
+            </div>
+            '''
+        
+        def generate_evening_review():
+            return '''
+            <div style="background: #f8f9fa; border-left: 6px solid #6f42c1; margin: 20px 0; padding: 20px;">
+                <h4 style="color: #6f42c1; margin-top: 0;">🌆 Evening Strategic Reflection</h4>
+                <p style="margin: 10px 0;">Time to assess today's execution and prepare tomorrow's strategic focus.</p>
+                
+                <h5 style="color: #495057; margin: 20px 0 10px 0;">📊 Daily Execution Assessment:</h5>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">What 3 specific actions did you complete today?</li>
+                    <li style="margin: 8px 0;">Which project made the most measurable progress?</li>
+                    <li style="margin: 8px 0;">What obstacle prevented planned work from getting done?</li>
+                    <li style="margin: 8px 0;">What opportunity did you identify for tomorrow?</li>
+                </ul>
+                
+                <h5 style="color: #495057; margin: 20px 0 10px 0;">🧠 Pattern Recognition:</h5>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">What pattern of success or failure emerged today?</li>
+                    <li style="margin: 8px 0;">What cross-project synergy became apparent?</li>
+                    <li style="margin: 8px 0;">What blog-worthy insight crystallized?</li>
+                </ul>
+            </div>
+
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #856404; margin-top: 0;">🎯 Tomorrow's Strategic Architecture</h4>
+                <p style="margin: 10px 0;">Based on today's results, what should tomorrow's 3 critical actions be?</p>
+                <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">Highest impact action: _______________</li>
+                    <li style="margin: 8px 0;">Most urgent deadline: _______________</li>
+                    <li style="margin: 8px 0;">Strategic opportunity: _______________</li>
+                </ol>
             </div>
             '''
         
         def generate_beginning_founders():
             return '''
-            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
-                <h4>🎯 Strategic Partnership Framework</h4>
-                <p>Based on our portfolio discussions, here's a comprehensive approach for The Beginning partnership:</p>
+            <div style="background: #f8f9fa; border-left: 6px solid #007bff; margin: 20px 0; padding: 20px;">
+                <h4 style="color: #0056b3; margin-top: 0;">🎯 Strategic Partnership Framework</h4>
+                <p style="margin: 15px 0;">Based on our portfolio development discussions and design thinking methodology, here's a comprehensive approach for The Beginning partnership:</p>
+            </div>
+            
+            <div style="background: #e8f5e8; border: 1px solid #28a745; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #155724; margin-top: 0;">💡 Value Proposition Framework</h4>
+                <ul style="margin: 15px 0; padding-left: 20px;">
+                    <li style="margin: 10px 0;"><strong>Design Thinking Application:</strong> Systematic methodology for family club experience optimization and user journey mapping</li>
+                    <li style="margin: 10px 0;"><strong>Community Integration Expertise:</strong> Brooklyn Heights Association network and local governance experience</li>
+                    <li style="margin: 10px 0;"><strong>Strategic Portfolio Approach:</strong> Multi-stakeholder value creation and ecosystem thinking from portfolio management experience</li>
+                    <li style="margin: 10px 0;"><strong>Workshop Methodology:</strong> Play-based learning integration with business objectives and family engagement</li>
+                </ul>
+            </div>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #856404; margin-top: 0;">🔍 Strategic Discovery Questions</h4>
                 
-                <h5>Value Proposition:</h5>
-                <ul>
-                    <li>Design thinking methodology for family club experience</li>
-                    <li>Brooklyn Heights community integration expertise</li>
-                    <li>Strategic portfolio approach to project development</li>
+                <h5 style="color: #495057; margin: 20px 0 10px 0;">Family Experience Design:</h5>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">What specific family engagement challenges are you solving that existing venues don't address?</li>
+                    <li style="margin: 8px 0;">How do you envision different age groups (toddlers, teens, parents) interacting within the 45k sq ft space?</li>
+                    <li style="margin: 8px 0;">What does "success" look like from both parent and child perspectives?</li>
                 </ul>
                 
-                <h5>Key Discovery Questions:</h5>
-                <ul>
-                    <li>What specific family engagement challenges are you solving?</li>
-                    <li>How will The Beginning integrate with Brooklyn Heights community?</li>
-                    <li>What success metrics matter most in the first year?</li>
-                    <li>How are you thinking about membership models and pricing?</li>
+                <h5 style="color: #495057; margin: 20px 0 10px 0;">Community Integration:</h5>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">How will The Beginning integrate with the broader Brooklyn Heights community ecosystem?</li>
+                    <li style="margin: 8px 0;">What partnerships with local organizations (schools, cultural institutions) are you considering?</li>
+                    <li style="margin: 8px 0;">How might we leverage community networks for both marketing and authentic programming?</li>
                 </ul>
                 
-                <h5>Proposed Collaboration:</h5>
-                <ul>
-                    <li>Discovery workshop to map family journey experiences</li>
-                    <li>Community research via BHA network</li>
-                    <li>Experience design and service blueprints</li>
-                    <li>Prototype testing before full launch</li>
+                <h5 style="color: #495057; margin: 20px 0 10px 0;">Business Model & Operations:</h5>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 8px 0;">What membership models are you exploring, and how do they align with family financial planning cycles?</li>
+                    <li style="margin: 8px 0;">What success metrics matter most in the first 12-18 months of operation?</li>
+                    <li style="margin: 8px 0;">How are you thinking about seasonal programming and space adaptability?</li>
                 </ul>
+            </div>
+            
+            <div style="background: #e3f2fd; border: 1px solid #2196f3; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #1565c0; margin-top: 0;">🛠️ Proposed Collaboration Framework</h4>
+                <ol style="margin: 15px 0; padding-left: 20px;">
+                    <li style="margin: 10px 0;"><strong>Discovery Workshop Session:</strong> 2-hour facilitated session to map comprehensive family journey experiences and pain points</li>
+                    <li style="margin: 10px 0;"><strong>Community Research Phase:</strong> Leverage Brooklyn Heights Association network for targeted family needs assessment and validation</li>
+                    <li style="margin: 10px 0;"><strong>Experience Design Development:</strong> Create detailed service blueprints and user experience flows for different family scenarios</li>
+                    <li style="margin: 10px 0;"><strong>Prototype & Test:</strong> Develop and test key experience elements before full-scale launch investment</li>
+                </ol>
+                
+                <p style="margin: 20px 0 5px 0;"><strong>Immediate Next Steps:</strong></p>
+                <p style="margin: 5px 0;">I propose we schedule a 90-minute strategic planning session where we can review your current vision, discuss these discovery questions in detail, define collaboration scope and timeline, and establish success metrics and project milestones.</p>
             </div>
             '''
         
-        def generate_custom():
-            return '''
-            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
-                <h4>Custom Communication</h4>
-                <p>Portfolio update and strategic communication from Watson.</p>
-            </div>
-            '''
+        def generate_daily_review():
+            return generate_morning_review()  # Default to morning review format
         
         # Select content based on email type
-        if email_type == 'daily-review':
-            email_content = generate_daily_review()
-            header_title = '📊 Daily Portfolio Review'
+        if email_type == 'morning-review':
+            email_content = generate_morning_review()
+            header_title = '🌅 Morning Portfolio Review'
+        elif email_type == 'evening-review':
+            email_content = generate_evening_review()
+            header_title = '🌆 Evening Portfolio Review'
         elif email_type == 'beginning-founders':
             email_content = generate_beginning_founders()
             header_title = '🏗️ The Beginning Partnership Framework'
         else:
-            email_content = generate_custom()
-            header_title = '📧 Portfolio Communication'
+            email_content = generate_daily_review()
+            header_title = '📊 Daily Portfolio Review'
         
         # Create complete HTML email
         html_email = f'''<!DOCTYPE html>
         <html>
         <head>
             <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }}
-                .content {{ padding: 20px; }}
-                .button {{ background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }}
+                .email-container {{ max-width: 800px; margin: 0 auto; background-color: #ffffff; }}
+                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }}
+                .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
+                .header p {{ margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }}
+                .content {{ padding: 30px 20px; }}
+                .dashboard-button {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 20px 0; text-align: center; }}
+                .dashboard-button:hover {{ opacity: 0.9; }}
+                .footer {{ background: #e3f2fd; padding: 25px 20px; border-radius: 8px; margin: 30px 0; }}
+                .footer h4 {{ color: #1565c0; margin-top: 0; }}
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>{header_title}</h1>
-                <p>Generated automatically by Watson</p>
-            </div>
-            
-            <div class="content">
-                {email_content}
-                
-                <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
-                    <h4>🔗 Quick Access</h4>
-                    <a href="https://vishp89.github.io/Intuitive-System/" class="button">📊 View Dashboard</a>
+            <div class="email-container">
+                <div class="header">
+                    <h1>{header_title}</h1>
+                    <p>Strategic Execution Dashboard • {datetime.now().strftime("%A, %B %d, %Y")}</p>
                 </div>
                 
-                <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <h4>🤖 Watson Integration</h4>
-                    <p>This email was generated automatically. Dashboard updated with current progress and flexible content management active.</p>
+                <div class="content">
+                    {email_content}
+                    
+                    <div style="text-align: center; margin: 40px 0;">
+                        <a href="https://vishp89.github.io/Intuitive-System/" class="dashboard-button">
+                            📊 Access Live Portfolio Dashboard
+                        </a>
+                        <p style="margin: 10px 0; color: #666; font-size: 14px;">Click to view real-time progress, task status, and AL East standings</p>
+                    </div>
+                    
+                    <div class="footer">
+                        <h4>🤖 Watson Strategic Integration</h4>
+                        <p style="margin: 10px 0;">This email was generated automatically based on your portfolio management system. Your dashboard includes live updates, task tracking, and flexible content management.</p>
+                        <p style="margin: 10px 0;"><strong>Reply to this email</strong> with progress updates, strategic insights, or new requests, and I'll process them into your dashboard and task system automatically.</p>
+                        <p style="margin: 15px 0 5px 0; color: #666; font-size: 14px;">Dashboard Link: <a href="https://vishp89.github.io/Intuitive-System/" style="color: #1565c0;">https://vishp89.github.io/Intuitive-System/</a></p>
+                    </div>
                 </div>
             </div>
         </body>
@@ -159,21 +253,13 @@ jobs:
         with open('email_content.html', 'w') as f:
             f.write(html_email)
             
-        # Write email details for the send step
-        email_data = {
-            'subject': subject,
-            'email_type': email_type,
-            'html_content': html_email
-        }
-        
-        with open('email_data.json', 'w') as f:
-            json.dump(email_data, f)
-            
         print(f"Generated {email_type} email: {subject}")
+        print("Email includes comprehensive portfolio content and dashboard link")
         
         EOF
       env:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         GITHUB_EVENT_ISSUE_TITLE: ${{ github.event.issue.title }}
         GITHUB_EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
     
@@ -186,8 +272,8 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         to: ${{ secrets.YOUR_EMAIL }}
         from: Portfolio Watson <${{ secrets.EMAIL_USERNAME }}>
-        subject: Custom Portfolio Email
-        body: Email content generated by Python script above
+        subject: Strategic Portfolio Update
+        body: Portfolio communication from Watson with comprehensive strategic content and dashboard access
         html_body: file://email_content.html
     
     - name: Close trigger issue
