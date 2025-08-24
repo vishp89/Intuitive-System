@@ -19,13 +19,13 @@ jobs:
       with:
         token: ${{ secrets.REPO_TOKEN }}
     
-    - name: Parse email request
-      id: parse
+    - name: Generate and send email
       run: |
         python3 << 'EOF'
         import os
         import re
         from datetime import datetime
+        import json
         
         # Determine email type
         if 'schedule' in os.environ.get('GITHUB_EVENT_NAME', ''):
@@ -45,11 +45,131 @@ jobs:
                 email_type = 'custom'
                 subject = 'Portfolio Communication from Watson'
         
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            f.write(f"email_type={email_type}\n")
-            f.write(f"subject={subject}\n")
+        # Generate email content based on type
+        def generate_daily_review():
+            return '''
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h3>⚡ Today's Strategic Priorities</h3>
+                <ul>
+                    <li><strong>HIGH:</strong> The Beginning meeting preparation</li>
+                    <li><strong>HIGH:</strong> Labor Day blog third theme identification</li>
+                    <li><strong>MEDIUM:</strong> Email/Dashboard UX review</li>
+                </ul>
+            </div>
+
+            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
+                <h4>🚀 Portfolio Status</h4>
+                <p><strong>Kairos Agency:</strong> 25% - Foundation solid, execution needed</p>
+                <p><strong>EY Studio+:</strong> 15% - Partnership targeting gap</p>
+                <p><strong>The Beginning:</strong> 5% - Critical preparation needed</p>
+                <p><strong>Portfolio Momentum:</strong> 20% - Systems built, execution focus</p>
+            </div>
+
+            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
+                <h4>⚾ Motivation Check</h4>
+                <p>Red Sox standings available on dashboard for daily motivation!</p>
+            </div>
+            '''
         
-        print(f"Email type: {email_type}, Subject: {subject}")
+        def generate_beginning_founders():
+            return '''
+            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
+                <h4>🎯 Strategic Partnership Framework</h4>
+                <p>Based on our portfolio discussions, here's a comprehensive approach for The Beginning partnership:</p>
+                
+                <h5>Value Proposition:</h5>
+                <ul>
+                    <li>Design thinking methodology for family club experience</li>
+                    <li>Brooklyn Heights community integration expertise</li>
+                    <li>Strategic portfolio approach to project development</li>
+                </ul>
+                
+                <h5>Key Discovery Questions:</h5>
+                <ul>
+                    <li>What specific family engagement challenges are you solving?</li>
+                    <li>How will The Beginning integrate with Brooklyn Heights community?</li>
+                    <li>What success metrics matter most in the first year?</li>
+                    <li>How are you thinking about membership models and pricing?</li>
+                </ul>
+                
+                <h5>Proposed Collaboration:</h5>
+                <ul>
+                    <li>Discovery workshop to map family journey experiences</li>
+                    <li>Community research via BHA network</li>
+                    <li>Experience design and service blueprints</li>
+                    <li>Prototype testing before full launch</li>
+                </ul>
+            </div>
+            '''
+        
+        def generate_custom():
+            return '''
+            <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
+                <h4>Custom Communication</h4>
+                <p>Portfolio update and strategic communication from Watson.</p>
+            </div>
+            '''
+        
+        # Select content based on email type
+        if email_type == 'daily-review':
+            email_content = generate_daily_review()
+            header_title = '📊 Daily Portfolio Review'
+        elif email_type == 'beginning-founders':
+            email_content = generate_beginning_founders()
+            header_title = '🏗️ The Beginning Partnership Framework'
+        else:
+            email_content = generate_custom()
+            header_title = '📧 Portfolio Communication'
+        
+        # Create complete HTML email
+        html_email = f'''<!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }}
+                .content {{ padding: 20px; }}
+                .button {{ background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>{header_title}</h1>
+                <p>Generated automatically by Watson</p>
+            </div>
+            
+            <div class="content">
+                {email_content}
+                
+                <div style="background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px;">
+                    <h4>🔗 Quick Access</h4>
+                    <a href="https://vishp89.github.io/Intuitive-System/" class="button">📊 View Dashboard</a>
+                </div>
+                
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h4>🤖 Watson Integration</h4>
+                    <p>This email was generated automatically. Dashboard updated with current progress and flexible content management active.</p>
+                </div>
+            </div>
+        </body>
+        </html>'''
+        
+        # Write email content to file for sending
+        with open('email_content.html', 'w') as f:
+            f.write(html_email)
+            
+        # Write email details for the send step
+        email_data = {
+            'subject': subject,
+            'email_type': email_type,
+            'html_content': html_email
+        }
+        
+        with open('email_data.json', 'w') as f:
+            json.dump(email_data, f)
+            
+        print(f"Generated {email_type} email: {subject}")
+        
         EOF
       env:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -65,96 +185,9 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         to: ${{ secrets.YOUR_EMAIL }}
         from: Portfolio Watson <${{ secrets.EMAIL_USERNAME }}>
-        subject: ${{ steps.parse.outputs.subject }}
-        html_body: |
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
-                  .content { padding: 20px; }
-                  .section { background: #f8f9fa; border-left: 4px solid #007bff; margin: 15px 0; padding: 15px; }
-                  .highlight { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                  .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
-              </style>
-          </head>
-          <body>
-              <div class="header">
-                  <h1>${{ steps.parse.outputs.email_type == 'daily-review' && '📊 Daily Portfolio Review' || steps.parse.outputs.email_type == 'beginning-founders' && '🏗️ The Beginning Partnership Framework' || '📧 Portfolio Communication' }}</h1>
-                  <p>Generated automatically by Watson</p>
-              </div>
-              
-              <div class="content">
-                  ${{ steps.parse.outputs.email_type == 'daily-review' && '
-                  <div class="highlight">
-                      <h3>⚡ Today\'s Strategic Priorities</h3>
-                      <ul>
-                          <li><strong>HIGH:</strong> The Beginning meeting preparation</li>
-                          <li><strong>HIGH:</strong> Labor Day blog third theme identification</li>
-                          <li><strong>MEDIUM:</strong> Email/Dashboard UX review</li>
-                      </ul>
-                  </div>
-
-                  <div class="section">
-                      <h4>🚀 Portfolio Status</h4>
-                      <p><strong>Kairos Agency:</strong> 25% - Foundation solid, execution needed</p>
-                      <p><strong>EY Studio+:</strong> 15% - Partnership targeting gap</p>
-                      <p><strong>The Beginning:</strong> 5% - Critical preparation needed</p>
-                      <p><strong>Portfolio Momentum:</strong> 20% - Systems built, execution focus</p>
-                  </div>
-
-                  <div class="section">
-                      <h4>⚾ Motivation Check</h4>
-                      <p>Red Sox standings available on dashboard for daily motivation!</p>
-                  </div>
-                  ' || steps.parse.outputs.email_type == 'beginning-founders' && '
-                  <div class="section">
-                      <h4>🎯 Strategic Partnership Framework</h4>
-                      <p>Based on our portfolio discussions, here\'s a comprehensive approach for The Beginning partnership:</p>
-                      
-                      <h5>Value Proposition:</h5>
-                      <ul>
-                          <li>Design thinking methodology for family club experience</li>
-                          <li>Brooklyn Heights community integration expertise</li>
-                          <li>Strategic portfolio approach to project development</li>
-                      </ul>
-                      
-                      <h5>Key Discovery Questions:</h5>
-                      <ul>
-                          <li>What specific family engagement challenges are you solving?</li>
-                          <li>How will The Beginning integrate with Brooklyn Heights community?</li>
-                          <li>What success metrics matter most in the first year?</li>
-                          <li>How are you thinking about membership models and pricing?</li>
-                      </ul>
-                      
-                      <h5>Proposed Collaboration:</h5>
-                      <ul>
-                          <li>Discovery workshop to map family journey experiences</li>
-                          <li>Community research via BHA network</li>
-                          <li>Experience design and service blueprints</li>
-                          <li>Prototype testing before full launch</li>
-                      </ul>
-                  </div>
-                  ' || '
-                  <div class="section">
-                      <h4>Custom Communication</h4>
-                      <p>Portfolio update and strategic communication from Watson.</p>
-                  </div>
-                  '}}
-                  
-                  <div class="section">
-                      <h4>🔗 Quick Access</h4>
-                      <a href="https://vishp89.github.io/Intuitive-System/" class="button">📊 View Dashboard</a>
-                  </div>
-                  
-                  <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                      <h4>🤖 Watson Integration</h4>
-                      <p>This email was generated automatically. Dashboard updated with current progress and flexible content management active.</p>
-                  </div>
-              </div>
-          </body>
-          </html>
+        subject: Custom Portfolio Email
+        body: Email content generated by Python script above
+        html_body: file://email_content.html
     
     - name: Close trigger issue
       if: github.event_name == 'issues'
