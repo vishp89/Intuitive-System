@@ -5,6 +5,7 @@ on:
     types: [opened]
   repository_dispatch:
     types: [dashboard-update, content-modify]
+  workflow_dispatch:  
 
 jobs:
   process-dashboard-request:
