@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "name": "intuitive-system-portfolio",
+  "version": "1.0.0",
+  "description": "Strategic portfolio management system with Watson integration",
+  "scripts": {
+    "build": "echo 'Static site with API functions'"
+  }
+}
